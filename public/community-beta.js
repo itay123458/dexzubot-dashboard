@@ -200,4 +200,3 @@
   window.addEventListener('dexzu-state', () => { if (Date.now() - lastRefresh > 30000) void refresh(false); });
   void refresh(true);
 })();
-
