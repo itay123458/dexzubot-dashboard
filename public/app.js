@@ -1,0 +1,841 @@
+let state;
+let pendingDashboardWrites = 0;
+let youtubeLatest;
+let youtubeLatestLoaded = false;
+let youtubeLatestRequest = 0;
+const dirtyPages = new Set();
+let safetyPromoDirty = false;
+let safetyPingDirty = false;
+let safetyAdvancedDirty = false;
+let levelingSettingsDirty = false;
+let levelingRewardsDirty = false;
+let levelRewardDraft = [];
+let activityExpanded = false;
+const previousMetricValues = new Map();
+const knownActivityIds = new Set();
+let activityInitialized = false;
+let latestActivityId = null;
+const $ = id => document.getElementById(id);
+const feedbackTimers = new Set();
+function feedbackLater(callback, delay) {
+  const timer = setTimeout(() => { feedbackTimers.delete(timer); callback(); }, delay);
+  feedbackTimers.add(timer); return timer;
+}
+function cancelFeedback(timer) { clearTimeout(timer); feedbackTimers.delete(timer); }
+window.addEventListener('pagehide', () => {
+  feedbackTimers.forEach(clearTimeout); feedbackTimers.clear();
+  document.querySelectorAll('.toast').forEach(element => element.remove());
+  document.querySelectorAll('.saved-feedback').forEach(element => { element.classList.remove('saved-feedback'); element.removeAttribute('aria-label'); });
+});
+const toast = (message, error = false, detail = '') => {
+  const type = typeof error === 'string' ? error : (error ? 'error' : 'success');
+  const element = document.createElement('div');
+  element.className = `toast ${type}`;
+  const icons = { success: '✓', error: '!', warning: '⚠', info: 'i' };
+  const close = document.createElement('button');
+  close.type = 'button'; close.className = 'toast-close'; close.setAttribute('aria-label', 'Dismiss notification'); close.textContent = '×';
+  const icon = document.createElement('span'); icon.className = 'toast-icon'; icon.textContent = icons[type] || icons.info;
+  const copy = document.createElement('div');
+  const title = document.createElement('strong'); title.textContent = message;
+  copy.append(title);
+  if (detail) { const description = document.createElement('small'); description.textContent = detail; copy.append(description); }
+  const progress = document.createElement('i'); progress.className = 'toast-progress';
+  element.append(icon, copy, close, progress); $('toasts').append(element);
+  let leaving = false;
+  const dismiss = () => {
+    if (leaving) return;
+    leaving = true; cancelFeedback(timer); element.classList.add('leaving');
+    feedbackLater(() => element.remove(), reducedMotion() ? 0 : 240);
+  };
+  close.onclick = dismiss;
+  let remaining = 3800, started = performance.now();
+  let timer = feedbackLater(dismiss, remaining);
+  const pauseReasons = new Set();
+  const pause = reason => {
+    if (!pauseReasons.size) { cancelFeedback(timer); remaining = Math.max(0, remaining - (performance.now() - started)); }
+    pauseReasons.add(reason); progress.style.animationPlayState = 'paused';
+  };
+  const resume = reason => {
+    pauseReasons.delete(reason);
+    if (leaving || pauseReasons.size) return;
+    cancelFeedback(timer); started = performance.now(); timer = feedbackLater(dismiss, remaining); progress.style.animationPlayState = 'running';
+  };
+  element.onmouseenter = () => pause('hover'); element.onmouseleave = () => resume('hover');
+  element.onfocusin = () => pause('focus'); element.onfocusout = event => { if (!element.contains(event.relatedTarget)) resume('focus'); };
+};
+let requestControl = null;
+const captureRequestControl = event => {
+  requestControl = event.submitter || event.target.closest?.('button,input');
+  const captured = requestControl;
+  feedbackLater(() => { if (requestControl === captured) requestControl = null; }, 0);
+};
+document.addEventListener('click', captureRequestControl, true);
+document.addEventListener('submit', captureRequestControl, true);
+const post = async (path, body) => {
+  if (!state) throw new Error('Wait for this workspace to load before making changes.');
+  pendingDashboardWrites += 1;
+  const control = requestControl;
+  const wasDisabled = control?.disabled;
+  if (control) { control.disabled = true; control.setAttribute('aria-busy', 'true'); }
+  try {
+  const response = await fetch(dashboardApiUrl(path), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Update failed');
+  return data;
+  } finally {
+    pendingDashboardWrites -= 1;
+    if (control) { control.disabled = wasDisabled; control.removeAttribute('aria-busy'); }
+  }
+};
+const checkbox = (id, label, checked, group) => `<label class="check-row"><input type="checkbox" data-group="${group}" value="${id}" ${checked ? 'checked' : ''}><span>${label}</span></label>`;
+const channelOptions = (channels, selected, placeholder) => `<option value="">${placeholder}</option>${channels.map(channel => `<option value="${channel.id}" ${channel.id === selected ? 'selected' : ''}>#${channel.name}</option>`).join('')}`;
+const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function animateNumber(element, from, to, duration) {
+  if (window.DexzuMotion) window.DexzuMotion.count(element, from, to, duration);
+  else if (element) element.textContent = String(to ?? '—');
+}
+
+function showSaved(button, originalLabel = '✓ Save Changes') {
+  if (!button) return;
+  cancelFeedback(button._savedTimer);
+  button.classList.add('saved-feedback');
+  button.setAttribute('aria-label', 'Saved successfully');
+  button._savedTimer = feedbackLater(() => { button.classList.remove('saved-feedback'); button.removeAttribute('aria-label'); }, 1300);
+}
+
+function updateNavIndicator() {
+  const nav = document.querySelector('.dashboard-nav');
+  const active = nav?.querySelector('.nav-item.active');
+  const indicator = $('nav-active-indicator');
+  if (!nav || !active || !indicator || window.innerWidth <= 760) return;
+  indicator.style.setProperty('--dock-x', `${active.offsetLeft}px`);
+  indicator.style.setProperty('--dock-y', `${active.offsetTop}px`);
+  indicator.style.setProperty('--dock-width', `${active.offsetWidth}px`);
+  indicator.style.setProperty('--dock-height', `${active.offsetHeight}px`);
+  indicator.classList.add('ready');
+}
+const icon = paths => `<svg viewBox="0 0 24 24" aria-hidden="true">${paths}</svg>`;
+const icons = {
+  members: icon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'),
+  command: icon('<path d="M18 9a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3Z"/>'),
+  hash: icon('<path d="M4 9h16M3 15h16M10 3 8 21M16 3l-2 18"/>'), clock: icon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  wallet: icon('<path d="M4 6h14a2 2 0 0 1 2 2v10H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12"/><path d="M16 11h6v4h-6a2 2 0 0 1 0-4Z"/>'),
+  trend: icon('<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>'), shield: icon('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>'),
+  chart: icon('<path d="M4 20V10M10 20V4M16 20v-7M22 20V7"/>'), ticket: icon('<path d="M2 9a3 3 0 0 0 0 6v3h20v-3a3 3 0 0 0 0-6V6H2Z"/><path d="M13 6v2M13 11v2M13 16v2"/>'),
+};
+const pageDetails = {
+  overview: ['Server overview', 'Your community, your controls. All in one place.'],
+  safety: ['Safety', 'Promotion filters and mention protection.'],
+  greetings: ['Greetings', 'Welcome and goodbye member experiences.'],
+  leveling: ['Leveling', 'XP rewards, announcements, and progression.'],
+  logging: ['Logging', 'Choose which server events are recorded.'],
+  youtube: ['YouTube', 'Upload alerts for this server’s YouTube creator.'],
+  faith: ['Faith', 'Daily Bible verses and respectful community discussion.'],
+  operations: ['Operations', 'Role management, autorole, health checks, staff access, and backups.'],
+  'module-counting': ['Counting', 'Manage the server counting game commands.'],
+  'module-economy': ['Economy', 'Manage currency, rewards, shops, and economy commands.'],
+  'module-moderation': ['Moderation', 'Manage staff moderation and member safety commands.'],
+  'module-ticket': ['Tickets', 'Manage private support ticket commands.'],
+  'module-serverstats': ['Server Stats', 'Manage live server statistic counter commands.'],
+};
+
+const moduleDetails = {
+  counting: { icon: '#', label: 'Counting', eyebrow: 'COMMUNITY GAME', description: 'Keep a shared counting sequence running with streaks and leaderboards.', examples: ['/count setup', '/count status', '/count reset', '/count leaderboard'] },
+  economy: { icon: '◇', label: 'Economy', eyebrow: 'SERVER ECONOMY', description: 'Currency, work, games, inventory, shops, and staff balance controls.', examples: ['/balance', '/daily', '/shop', '/economy dashboard'] },
+  moderation: { icon: '◆', label: 'Moderation', eyebrow: 'STAFF TOOLS', description: 'Bans, kicks, timeouts, warnings, locks, notes, and other staff actions.', examples: ['/ban', '/timeout', '/warn', '/cases'] },
+  ticket: { icon: '▣', label: 'Tickets', eyebrow: 'MEMBER SUPPORT', description: 'Private support tickets, priorities, staff access, and ticket panels.', examples: ['/ticket setup', '/ticket dashboard', '/claim', '/close'] },
+  serverstats: { icon: '▥', label: 'Server Stats', eyebrow: 'LIVE COUNTERS', description: 'Voice-channel counters that display live server totals.', examples: ['/serverstats create', '/serverstats list', '/serverstats update', '/serverstats delete'] },
+};
+
+function bindModuleCommandControls(pageName, category) {
+  const search = $('module-command-search');
+  if (search) search.oninput = () => {
+    const query = search.value.trim().toLowerCase();
+    document.querySelectorAll('.module-access-row').forEach(row => { row.hidden = !row.textContent.toLowerCase().includes(query); });
+  };
+  document.querySelectorAll('[data-module-command]').forEach(toggle => { toggle.onchange = async () => {
+    const enabled = toggle.checked; const command = toggle.dataset.moduleCommand; const row = toggle.closest('.module-access-row');
+    toggle.disabled = true; row.classList.toggle('command-disabled', !enabled);
+    try {
+      await post('command', { command, enabled });
+      toast(`/${command} ${enabled ? 'enabled' : 'disabled'}`);
+      await load();
+      void refreshRecentActivity();
+    } catch (error) {
+      toggle.checked = !enabled; row.classList.toggle('command-disabled', enabled);
+      toast(`Couldn't update /${command}`, true, error.message);
+    } finally { toggle.disabled = false; }
+  }; });
+}
+
+function renderModulePage(pageName) {
+  if (!state || !pageName.startsWith('module-')) return;
+  const key = pageName.slice(7);
+  const details = moduleDetails[key];
+  const category = state.categories.find(item => item.key.toLowerCase() === key || item.name.toLowerCase().replaceAll(' ', '') === key);
+  if (!details || !category) {
+    $('module-page-content').innerHTML = '<article class="card module-detail-card"><h2>Module unavailable</h2><p>This module is not currently registered with DexzuBot.</p></article>';
+    return;
+  }
+  const commands = category.commands || [];
+  const countingSettings = key === 'counting' ? `<article class="card module-access-card counting-edit-card"><div class="card-head"><div><p class="eyebrow">EDIT PROTECTION</p><h2>Edited Message Action</h2><p>Choose what happens if somebody changes a count after DexzuBot accepted it.</p></div></div><div class="counting-edit-control"><select id="counting-edit-action"><option value="continue" ${state.counting.editedMessageAction === 'continue' ? 'selected' : ''}>Continue and show the next number</option><option value="reset" ${state.counting.editedMessageAction === 'reset' ? 'selected' : ''}>Reset the sequence to 1</option></select><button id="save-counting-edit-action">✓ Save Setting</button></div><p class="module-disabled-note">Current next number: <strong>${escapeHtml(state.counting.nextNumber)}</strong>. This setting is also available with <code>/count edit-action</code>.</p></article>` : '';
+  const economySettings = key === 'economy' ? `<article class="card module-access-card counting-edit-card"><div class="card-head"><div><p class="eyebrow">ECONOMY CHANNEL</p><h2>Command Destination</h2><p>All member and staff economy commands are restricted to this channel.</p></div></div><div class="counting-edit-control"><select id="economy-channel">${channelOptions(state.channels, state.economy.channelId, 'Choose an economy channel')}</select><button id="save-economy-channel">✓ Save Channel</button></div><p class="module-disabled-note">Members using an Economy command elsewhere will be directed to the selected channel.</p></article>` : '';
+  $('module-page-content').innerHTML = `<div class="feature-heading module-heading"><div><p class="eyebrow">${details.eyebrow}</p><h2>${details.label}</h2><p>${details.description}</p></div><span class="module-page-icon">${details.icon}</span></div><div class="module-page-grid"><article class="card module-detail-card ${category.enabled ? '' : 'module-disabled'}"><div class="card-head"><div><p class="eyebrow">MODULE ACCESS</p><h2>${details.label} Commands</h2><p>Changes apply instantly in Discord and are remembered after restarts.</p></div><label class="switch"><input id="module-page-toggle" type="checkbox" ${category.enabled ? 'checked' : ''} aria-label="Toggle ${details.label}"><span></span></label></div><div class="module-health"><div><small>Status</small><strong><i class="status-dot ${category.enabled ? 'good' : ''}"></i>${category.enabled ? 'Enabled' : 'Disabled'}</strong></div><div><small>Available commands</small><strong>${category.enabledCommands} / ${category.totalCommands}</strong></div></div><div class="module-progress"><i><b style="width:${category.totalCommands ? Math.round(category.enabledCommands / category.totalCommands * 100) : 0}%"></b></i><span>${category.enabledCommands} enabled</span></div><p class="module-disabled-note">Disabled modules are hidden from the help menu and their slash commands are removed from this server.</p></article><article class="card module-command-card"><p class="eyebrow">QUICK START</p><h2>Popular Commands</h2><p>Use these commands directly in Discord.</p><div class="module-command-list">${details.examples.map(command => `<code>${command}</code>`).join('')}</div></article></div>${countingSettings}${economySettings}<article class="card module-access-card"><div class="card-head"><div><p class="eyebrow">COMMAND ACCESS</p><h2>All ${details.label} Commands</h2><p>Enable or disable individual commands for this server.</p></div><span class="status-note">${commands.length} command paths</span></div><input id="module-command-search" class="search-input" type="search" placeholder="Search ${details.label.toLowerCase()} commands…"><div class="module-access-list">${commands.map(command => `<div class="module-access-row ${command.enabled && category.enabled ? '' : 'command-disabled'}"><div><code>/${escapeHtml(command.name)}</code><p>${escapeHtml(command.description)}</p>${command.protected ? '<small>Required command</small>' : ''}</div><label class="switch"><input data-module-command="${escapeHtml(command.name)}" type="checkbox" ${command.enabled && category.enabled ? 'checked' : ''} ${command.protected || !category.enabled ? 'disabled' : ''} aria-label="Toggle /${escapeHtml(command.name)}"><span></span></label></div>`).join('')}</div></article>`;
+  const toggle = $('module-page-toggle');
+  toggle.onchange = async () => {
+    const enabled = toggle.checked; const card = toggle.closest('.module-detail-card');
+    toggle.disabled = true; card.classList.toggle('module-disabled', !enabled);
+    try {
+      await post('category', { category: category.key, enabled });
+      toast(`${details.label} ${enabled ? 'enabled' : 'disabled'}`);
+      await load();
+      void refreshRecentActivity();
+    } catch (error) {
+      toggle.checked = !enabled; card.classList.toggle('module-disabled', enabled);
+      toast(`Couldn't update ${details.label}`, true, error.message);
+    } finally { toggle.disabled = false; }
+  };
+  bindModuleCommandControls(pageName, category);
+  const saveCountingEditAction = $('save-counting-edit-action');
+  if (saveCountingEditAction) saveCountingEditAction.onclick = async () => {
+    saveCountingEditAction.disabled = true;
+    try {
+      const result = await post('counting/edit-action', { action: $('counting-edit-action').value });
+      state.counting.editedMessageAction = result.editedMessageAction;
+      showSaved(saveCountingEditAction, '✓ Save Setting');
+      toast('Counting edit protection saved');
+    } catch (error) { toast("Couldn't save counting edit protection", true, error.message); }
+    finally { saveCountingEditAction.disabled = false; }
+  };
+  const saveEconomyChannel = $('save-economy-channel');
+  if (saveEconomyChannel) saveEconomyChannel.onclick = async () => {
+    const channelId = $('economy-channel').value;
+    if (!channelId) { toast('Choose an economy channel', 'warning'); return; }
+    saveEconomyChannel.disabled = true;
+    try {
+      const result = await post('economy/channel', { channelId });
+      state.economy.channelId = result.channelId;
+      showSaved(saveEconomyChannel, '✓ Save Channel');
+      toast('Economy channel saved', false, `Economy commands are now restricted to #${result.channelName}.`);
+    } catch (error) { toast("Couldn't save the economy channel", true, error.message); }
+    finally { saveEconomyChannel.disabled = false; }
+  };
+}
+
+function showPage(pageName) {
+  const selected = pageDetails[pageName] ? pageName : 'overview';
+  const selectedPanel = selected.startsWith('module-') ? 'module' : selected;
+  const currentPage = document.querySelector('[data-panel].active')?.dataset.panel;
+  if (currentPage && currentPage !== selected && dirtyPages.has(currentPage)) {
+    if (!confirm('Discard unsaved changes?')) return;
+    dirtyPages.delete(currentPage);
+    setDirty.sources?.delete(currentPage);
+    window.dispatchEvent(new CustomEvent('dexzu-discard', { detail: currentPage }));
+    if (state) render(state);
+  }
+  document.querySelectorAll('[data-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.panel === selectedPanel));
+  document.querySelectorAll('[data-page]').forEach(button => button.classList.toggle('active', button.dataset.page === selected));
+  requestAnimationFrame(updateNavIndicator);
+  $('page-title').textContent = pageDetails[selected][0];
+  $('breadcrumb-page').textContent = selected === 'overview' ? 'Control center' : pageDetails[selected][0];
+  document.querySelectorAll('[data-page]').forEach(button => {
+    if (button.dataset.page === selected) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  $('page-description').textContent = pageDetails[selected][1];
+  history.replaceState(null, '', `#${selected}`);
+  renderModulePage(selected);
+  window.dispatchEvent(new CustomEvent('dexzu-page', { detail: { panel: document.querySelector(`[data-panel="${selectedPanel}"]`) } }));
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  if (selected === 'youtube') void loadYouTubeLatest();
+}
+
+function setDirty(page, dirty = true, source = 'page') {
+  if (!['safety', 'greetings', 'leveling', 'logging', 'operations', 'faith'].includes(page)) return;
+  setDirty.sources ||= new Map();
+  const sources = setDirty.sources.get(page) || new Set();
+  if (dirty) sources.add(source); else sources.delete(source);
+  if (sources.size) { setDirty.sources.set(page, sources); dirtyPages.add(page); }
+  else { setDirty.sources.delete(page); dirtyPages.delete(page); }
+  document.querySelector(`[data-panel="${page}"]`)?.classList.toggle('is-dirty', sources.size > 0);
+}
+
+function channelName(id) { return state?.channels.find(channel => channel.id === id)?.name || 'Not configured'; }
+function updateSafetyUi() {
+  const promoCount = document.querySelectorAll('[data-group=promo]:checked').length;
+  const pingCount = document.querySelectorAll('[data-group=ping]:checked').length;
+  $('promo-count').textContent = `${promoCount} channel${promoCount === 1 ? '' : 's'} selected`;
+  $('ping-count').textContent = `${pingCount} member${pingCount === 1 ? '' : 's'} protected`;
+  $('safety-summary').innerHTML = [['Promotion Filter',$('promo-enabled').checked],['Mention Protection',pingCount > 0],['Anti Spam',$('spam-enabled').checked],['Mention Limit',$('mentions-enabled').checked]].map(([label,enabled]) => `<span><i class="status-dot ${enabled ? 'good' : ''}"></i>${label} <b>${enabled ? 'Enabled' : 'Disabled'}</b></span>`).join('');
+}
+function updateGreetingUi() {
+  const welcomeChannel = channelName($('welcome-channel').value); const goodbyeChannel = channelName($('goodbye-channel').value);
+  $('greeting-summary').innerHTML = [['Welcome Messages', $('welcome-enabled').checked, welcomeChannel, '＋'], ['Goodbye Messages', $('goodbye-enabled').checked, goodbyeChannel, '−']].map(([label, enabled, destination, symbol]) => `<article class="summary-card"><span class="summary-icon">${symbol}</span><div><small>${label}</small><strong><i class="status-dot ${enabled ? 'good' : ''}"></i>${enabled ? 'Enabled' : 'Disabled'}</strong><p>Destination: ${destination === 'Not configured' ? '' : '#'}${escapeHtml(destination)}</p></div></article>`).join('');
+  $('welcome-preview').querySelector('p').textContent = $('welcome-message').value.replaceAll('{user}', 'ExampleUser').replaceAll('{server}', state?.server.name || 'the server');
+  $('goodbye-preview').querySelector('p').textContent = $('goodbye-message').value.replaceAll('{user.tag}', 'ExampleUser').replaceAll('{server}', state?.server.name || 'the server');
+}
+function validateLeveling() {
+  const min = Number($('leveling-xp-min').value), max = Number($('leveling-xp-max').value), cooldown = Number($('leveling-cooldown').value), multiplier = Number($('leveling-multiplier').value);
+  let error = '';
+  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max > 1000 || min > max) error = 'Minimum XP must be at least 1 and cannot exceed maximum XP.';
+  else if (!Number.isInteger(cooldown) || cooldown < 0 || cooldown > 3600) error = 'Cooldown must be between 0 and 3600 seconds.';
+  else if (!Number.isFinite(multiplier) || multiplier < .1 || multiplier > 10) error = 'Multiplier must be between 0.1× and 10×.';
+  $('leveling-error').textContent = error;
+  $('save-leveling').disabled = Boolean(error);
+  return !error;
+}
+function renderLevelRewards() {
+  const rewards = [...levelRewardDraft].sort((a, b) => a.level - b.level);
+  $('level-reward-count').textContent = `${rewards.length} configured`;
+  $('level-reward-list').innerHTML = rewards.length ? rewards.map(reward => {
+    const role = state.roles.find(item => item.id === reward.roleId);
+    return `<div class="level-reward-row"><span>Level ${reward.level}</span><strong><i class="role-color" style="color:${escapeHtml(role?.color || '#99aab5')};background:${escapeHtml(role?.color || '#99aab5')}"></i>${escapeHtml(role?.name || 'Missing role')}</strong><button type="button" data-remove-level-reward="${reward.level}">Remove</button></div>`;
+  }).join('') : '<div class="level-reward-empty">No level roles configured yet.</div>';
+  document.querySelectorAll('[data-remove-level-reward]').forEach(button => { button.onclick = () => {
+    levelRewardDraft = levelRewardDraft.filter(reward => reward.level !== Number(button.dataset.removeLevelReward));
+    levelingRewardsDirty = true; setDirty('leveling', levelingSettingsDirty || levelingRewardsDirty); renderLevelRewards();
+  }; });
+}
+function updateLoggingUi() {
+  document.querySelectorAll('[data-group=logging]').forEach(input => input.closest('.check-row')?.classList.toggle('selected', input.checked));
+  const checked = document.querySelectorAll('[data-group=logging]:checked').length;
+  const total = document.querySelectorAll('[data-group=logging]').length;
+  const searchQuery = $('logging-search').value.trim();
+  const visible = [...document.querySelectorAll('[data-group=logging]')].filter(input => !input.closest('.check-row').hidden).length;
+  $('logging-enabled-count').textContent = searchQuery ? `${visible} event${visible === 1 ? '' : 's'} found` : `${checked} / ${total} events enabled`;
+  $('logging-bar-count').textContent = `${checked} events enabled`;
+  const moderationDestination = channelName($('logging-moderation-channel').value);
+  const serverDestination = channelName($('logging-server-channel').value);
+  $('logging-summary').innerHTML = [['Logging', $('logging-enabled').checked ? 'Enabled' : 'Disabled'], ['Moderation Logs', `${moderationDestination === 'Not configured' ? '' : '#'}${moderationDestination}`], ['Server Logs', `${serverDestination === 'Not configured' ? '' : '#'}${serverDestination}`], ['Events', `${checked} enabled`]].map(([label,value]) => `<article class="summary-card"><small>${label}</small><strong>${escapeHtml(value)}</strong></article>`).join('');
+  document.querySelectorAll('.logging-group').forEach(group => { const all = group.querySelectorAll('[data-group=logging]').length; const on = group.querySelectorAll('[data-group=logging]:checked').length; group.querySelector('.group-count').textContent = `${on}/${all} enabled`; });
+}
+
+function relativeActivityTime(timestamp) {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000));
+  if (seconds < 10) return 'just now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function renderRecentActivity() {
+  if (!state) return;
+  const activities = Array.isArray(state.recentActivity) ? state.recentActivity : [];
+  const visible = activities.slice(0, activityExpanded ? 20 : 5);
+  $('view-logs').textContent = activities.length > 5 ? (activityExpanded ? 'Show less' : 'View all') : 'Up to date';
+  $('view-logs').disabled = activities.length <= 5;
+  if (!visible.length) {
+    activityInitialized = true;
+    $('recent-activity').innerHTML = '<div class="empty-state"><span class="empty-icon">≡</span><strong>No recent activity</strong><p>New DexzuBot events will appear here.</p></div>';
+    return;
+  }
+  const activityIcons = { moderation: icons.shield, message: icons.command, member: icons.members, voice: icons.members, leveling: icons.trend, counting: icons.hash, role: icons.shield, channel: icons.hash, dashboard: icons.command, guild: icons.members, invite: icons.trend, emoji: icons.command, sticker: icons.ticket };
+  const feed = $('recent-activity');
+  const existing = new Map([...feed.querySelectorAll('[data-activity-id]')].map(row => [row.dataset.activityId, row]));
+  const anchor = [...existing.values()].find(row => row.getBoundingClientRect().bottom > 0);
+  const anchorTop = anchor?.getBoundingClientRect().top;
+  const scrollTop = feed.scrollTop;
+  feed.querySelector('.empty-state')?.remove();
+  const keep = new Set();
+  visible.forEach((activity, index) => {
+    const id = String(activity.id); keep.add(id);
+    let row = existing.get(id);
+    if (!row) {
+      row = document.createElement('div'); row.className = 'activity-row'; row.dataset.activityId = id;
+      row.innerHTML = `<span class="activity-type ${escapeHtml(activity.category)}">${activityIcons[activity.category] || '•'}</span><div><strong></strong><p></p></div><time></time>`;
+      if (activityInitialized && !knownActivityIds.has(id) && !reducedMotion() && !document.hidden) row.classList.add('activity-new');
+    }
+    row.querySelector('strong').textContent = activity.title;
+    const detail = row.querySelector('p'); detail.textContent = activity.detail || ''; detail.hidden = !activity.detail;
+    const time = row.querySelector('time'); time.dateTime = activity.timestamp;
+    time.title = new Date(activity.timestamp).toLocaleString(); time.textContent = relativeActivityTime(activity.timestamp);
+    if (feed.children[index] !== row) feed.insertBefore(row, feed.children[index] || null);
+  });
+  existing.forEach((row, id) => { if (!keep.has(id)) row.remove(); });
+  activities.forEach(activity => knownActivityIds.add(String(activity.id)));
+  if (knownActivityIds.size > 200) { knownActivityIds.clear(); activities.forEach(activity => knownActivityIds.add(String(activity.id))); }
+  activityInitialized = true;
+  feed.scrollTop = scrollTop;
+  if (anchor?.isConnected && window.scrollY > 0) window.scrollBy(0, anchor.getBoundingClientRect().top - anchorTop);
+  latestActivityId = null;
+
+}
+
+function renderOperations() {
+  if (!state?.operations) return;
+  const health = state.operations.health || { checks: [], failed: 0, warnings: 0 };
+  const softbans = state.operations.softbans || [];
+  const snapshots = state.operations.snapshots || [];
+  const selectedRoles = new Set(state.commandAccessRoleIds || []);
+  $('operations-summary').innerHTML = [
+    ['Health', health.failed ? `${health.failed} failed` : 'Healthy'],
+    ['Warnings', String(health.warnings || 0)],
+    ['Staff Roles', String(selectedRoles.size)],
+    ['Timed Softbans', String(softbans.length)],
+  ].map(([label, value]) => `<article class="summary-card"><small>${label}</small><strong>${escapeHtml(value)}</strong></article>`).join('');
+  $('operations-health').innerHTML = health.checks?.length ? health.checks.map(check => `<div class="operation-row"><span><i class="status-dot ${check.ok ? 'good' : check.warning ? 'warning' : 'bad'}"></i><b>${escapeHtml(check.label)}</b><small>${escapeHtml(check.detail)}</small></span><strong>${check.ok ? 'Ready' : check.warning ? 'Optional' : 'Fix needed'}</strong></div>`).join('') : '<div class="empty-state"><strong>No health result yet</strong></div>';
+  const accessRoles = state.accessRoles || state.roles || [];
+  $('access-role-list').innerHTML = accessRoles.length ? accessRoles.map(role => checkbox(role.id, role.name, selectedRoles.has(role.id), 'access-role')).join('') : '<div class="empty-state"><strong>No roles found</strong></div>';
+  $('access-role-count').textContent = `${selectedRoles.size} role${selectedRoles.size === 1 ? '' : 's'} selected`;
+  document.querySelectorAll('[data-group=access-role]').forEach(input => { input.onchange = () => { const count = document.querySelectorAll('[data-group=access-role]:checked').length; $('access-role-count').textContent = `${count} role${count === 1 ? '' : 's'} selected`; input.closest('.check-row')?.classList.toggle('selected', input.checked); }; input.closest('.check-row')?.classList.toggle('selected', input.checked); });
+  $('timed-softbans').innerHTML = softbans.length ? softbans.map(item => `<div class="operation-row"><span><b>User ${escapeHtml(item.userId)}</b><small>Ends ${escapeHtml(new Date(item.expiresAt).toLocaleString())} · ${escapeHtml(item.reason || 'No reason')}</small></span><button class="danger-secondary" data-release-softban="${escapeHtml(item.userId)}">Release now</button></div>`).join('') : '<div class="empty-state compact-empty"><strong>No active timed softbans</strong><p>Scheduled softbans will appear here.</p></div>';
+  $('config-snapshots').innerHTML = snapshots.length ? snapshots.map(item => `<div class="operation-row"><span><b>Configuration snapshot</b><small>${escapeHtml(new Date(item.createdAt).toLocaleString())}</small></span><button class="secondary-button" data-restore-snapshot="${escapeHtml(item.id)}">Restore</button></div>`).join('') : '<div class="empty-state compact-empty"><strong>No snapshots yet</strong><p>Create one before a large settings change.</p></div>';
+  document.querySelectorAll('[data-release-softban]').forEach(button => { button.onclick = async () => { if (!confirm('End this timed softban now and send the return invite?')) return; button.disabled = true; try { await post('operations/softban/release', { userId: button.dataset.releaseSoftban }); toast('Timed softban ended'); await load(); } catch (error) { toast("Couldn't release timed softban", true, error.message); } finally { button.disabled = false; } }; });
+  document.querySelectorAll('[data-restore-snapshot]').forEach(button => { button.onclick = async () => { if (!confirm('Restore this snapshot? Current server settings will be replaced.')) return; const confirmation = prompt(`Type ${state.server.name} to confirm:`); if (confirmation === null) return; button.disabled = true; try { await post('operations/snapshot/restore', { snapshotId: button.dataset.restoreSnapshot, confirm: confirmation }); toast('Configuration restored'); await load(); } catch (error) { toast("Couldn't restore snapshot", true, error.message); } finally { button.disabled = false; } }; });
+}
+
+async function refreshRecentActivity() {
+  if (!state) return;
+  try {
+    const response = await fetch(dashboardApiUrl('activity'), { cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Activity unavailable');
+    const previousTopId = state.recentActivity?.[0]?.id;
+    state.recentActivity = data.activity;
+    if (previousTopId && data.activity?.[0]?.id !== previousTopId) latestActivityId = data.activity[0].id;
+    renderRecentActivity();
+  } catch { /* Keep the last successfully loaded activity feed. */ }
+}
+
+document.querySelectorAll('[data-page]').forEach(button => {
+  button.onclick = () => showPage(button.dataset.page);
+});
+showPage(location.hash.slice(1));
+
+const setSidebarCollapsed = collapsed => {
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  $('sidebar-collapse').textContent = collapsed ? '›' : '‹';
+  $('sidebar-collapse').setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  try { localStorage.setItem('dexzu-sidebar-collapsed', String(collapsed)); } catch { /* Keep controls usable when browser storage is blocked. */ }
+};
+let savedSidebarCollapsed = false;
+try { savedSidebarCollapsed = localStorage.getItem('dexzu-sidebar-collapsed') === 'true'; } catch { /* Use the default layout. */ }
+setSidebarCollapsed(savedSidebarCollapsed);
+$('sidebar-collapse').onclick = () => { setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed')); requestAnimationFrame(updateNavIndicator); };
+$('view-logs').onclick = () => { activityExpanded = !activityExpanded; renderRecentActivity(); };
+
+function render(current) {
+  // Backend refreshes must not erase edits, focus, or expanded groups.
+  const drafts = [...document.querySelectorAll('[data-panel]')].filter(panel => dirtyPages.has(panel.dataset.panel)).map(panel => ({
+    panel,
+    values: [...panel.querySelectorAll('input,select,textarea')].map(input => ({
+      id: input.id, group: input.dataset.group, key: input.getAttribute('value'),
+      value: input.value, checked: input.checked,
+    })),
+  }));
+  const expanded = [...document.querySelectorAll('details')].map(element => ({ id: element.id, group: element.dataset.logGroup, open: element.open }));
+  state = current;
+  window.dispatchEvent(new CustomEvent('dexzu-state', { detail: current }));
+  $('bot-avatar').src = current.bot.avatar;
+  $('server-icon').src = current.server.icon || current.bot.avatar;
+  $('server-name').textContent = current.server.name;
+  $('server-status-dot').className = current.bot.online ? 'online' : '';
+  $('online-pill').textContent = current.bot.online ? 'Online' : 'Offline';
+  $('online-pill').className = `pill ${current.bot.online ? 'online' : ''}`;
+  const uptimeHours = Math.floor(current.bot.uptimeSeconds / 3600);
+  const enabledModules = current.categories.filter(category => category.enabled).length;
+  const health = current.operations?.health;
+  const metricRows = [
+    ['Members', current.server.members, 'In your community', icons.members],
+    ['Channels', current.server.channels, 'Across the server', icons.hash],
+    ['Roles', current.server.roles ?? '—', 'Server roles', icons.shield],
+    ['Commands', current.bot.loadedCommands, 'Loaded and ready', icons.command],
+    ['Modules', enabledModules, `${current.categories.length} available systems`, icons.chart],
+    ['Timed softbans', current.operations?.softbans?.length ?? '—', 'Currently scheduled', icons.clock],
+    ['Health alerts', health ? (health.failed || 0) + (health.warnings || 0) : '—', health ? 'From last health check' : 'No health check yet', icons.shield],
+    ['Snapshots', current.operations?.snapshots?.length ?? '—', 'Configuration checkpoints', icons.wallet],
+  ];
+  const metrics = $('metrics');
+  metrics.querySelectorAll('.skeleton').forEach(node => node.remove());
+  metricRows.forEach(([key, rawValue, secondary, symbol], index) => {
+    const value = rawValue == null ? '—' : rawValue;
+    let card = metrics.children[index];
+    if (!card || !card.classList.contains('metric')) {
+      card = document.createElement('div'); card.className = 'metric';
+      card.innerHTML = `<div class="metric-icon">${symbol}</div><span></span><strong></strong><small></small>`;
+      metrics.append(card);
+    }
+    card.querySelector('span').textContent = key;
+    card.querySelector('small').textContent = secondary;
+    const number = card.querySelector('strong');
+    if (!previousMetricValues.has(key) || previousMetricValues.get(key) !== value) {
+      const from = previousMetricValues.has(key) ? Number(number.textContent) : 0;
+      animateNumber(number, Number.isFinite(from) ? from : 0, value, 450);
+      previousMetricValues.set(key, value);
+    }
+  });
+  const moduleMeta = {
+    core: [icons.command, 'Essential bot functionality'], counting: [icons.hash, 'Server counting game'], economy: [icons.wallet, 'Currency and economy commands'],
+    leveling: [icons.trend, 'XP and member progression'], moderation: [icons.shield, 'Staff moderation tools'], serverstats: [icons.chart, 'Live server statistics'],
+    ticket: [icons.ticket, 'Private support tickets'], tickets: [icons.ticket, 'Private support tickets'],
+  };
+  $('categories').innerHTML = current.categories.map(category => {
+    const meta = moduleMeta[category.key.toLowerCase()] || [icons.command, 'Discord command module'];
+    return `<div class="toggle-row ${category.enabled ? '' : 'module-disabled'}"><div class="module-copy"><span class="module-icon" aria-hidden="true">${meta[0]}</span><div><strong>${category.name}</strong><em>${meta[1]}</em></div></div><div class="module-controls"><small>${category.enabledCommands} / ${category.totalCommands} commands</small><label class="switch"><input data-category="${category.key}" data-name="${category.name}" type="checkbox" ${category.enabled ? 'checked' : ''} aria-label="Toggle ${category.name}"><span></span></label></div></div>`;
+  }).join('');
+  const databaseReady = current.database?.isAvailable === true && current.database?.isDegraded !== true;
+  const statusRows = [
+    ['Bot', current.bot.online ? 'Online' : 'Offline', current.bot.online ? 'good' : 'bad'],
+    ['Discord API', current.bot.online ? 'Connected' : 'Disconnected', current.bot.online ? 'good' : 'bad'],
+    ['WebSocket', current.bot.online ? 'Connected' : 'Disconnected', current.bot.online ? 'good' : 'bad'],
+    ...(current.database ? [['Database', databaseReady ? 'Connected' : 'Degraded', databaseReady ? 'good' : 'warning']] : []),
+    ['Dashboard API', 'Connected', 'good'],
+    ['Uptime', `${uptimeHours}h ${Math.floor((current.bot.uptimeSeconds % 3600) / 60)}m`, current.bot.online ? 'good' : 'bad'],
+  ];
+  const systemStatus = $('system-status');
+  systemStatus.querySelectorAll('.skeleton-line').forEach(node => node.remove());
+  statusRows.forEach(([label, value, status], index) => {
+    let row = systemStatus.children[index];
+    if (!row) {
+      row = document.createElement('div'); row.className = 'status-row';
+      row.innerHTML = '<span></span><strong><i class="status-dot"></i><span></span></strong>';
+      systemStatus.append(row);
+    }
+    row.firstElementChild.textContent = label;
+    const text = row.querySelector('strong span');
+    if (text.textContent !== value) {
+      if (text.textContent && !reducedMotion() && !document.hidden) text.classList.add('status-value-updated');
+      text.textContent = value;
+    }
+    row.querySelector('i').className = `status-dot ${status}`;
+  });
+  while (systemStatus.children.length > statusRows.length) systemStatus.lastElementChild.remove();
+  $('performance').innerHTML = [
+    ['Server', current.server.name], ['Channels', current.server.channels],
+    ['Roles', current.server.roles ?? '—'], ['Enabled modules', `${enabledModules} / ${current.categories.length}`],
+  ].map(([label, value]) => `<div class="status-row"><span>${label}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
+  renderRecentActivity();
+  renderOperations();
+  document.querySelectorAll('[data-category]').forEach(element => { element.onchange = async () => {
+    const row = element.closest('.toggle-row'); const enabled = element.checked; const name = element.dataset.name;
+    row.classList.toggle('module-disabled', !enabled); row.classList.add('module-updating'); element.disabled = true;
+    try { await post('category', { category: element.dataset.category, enabled }); row.classList.add('module-flash'); feedbackLater(() => row.classList.remove('module-flash'), 500); toast(`${name} ${enabled ? 'enabled' : 'disabled'}`, false, `${name} commands are now ${enabled ? 'active' : 'inactive'}.`); await load(); void refreshRecentActivity(); }
+    catch (error) { element.checked = !enabled; row.classList.toggle('module-disabled', enabled); toast(`Couldn't update ${name}.`, true, error.message); }
+    finally { row.classList.remove('module-updating'); element.disabled = false; }
+  }; });
+  $('promo-enabled').checked = current.antiPromo.enabled;
+  $('promo-channels').innerHTML = current.channels.map(channel => checkbox(channel.id, `#${channel.name}`, current.antiPromo.allowedChannelIds.includes(channel.id), 'promo')).join('');
+  $('ping-owners').innerHTML = current.owners.map(owner => `<label class="check-row owner-row"><input type="checkbox" data-group="ping" value="${owner.id}" ${current.antiPing.protectedUserIds.includes(owner.id) ? 'checked' : ''}><span class="owner-avatar">${owner.avatar ? `<img src="${escapeHtml(owner.avatar)}" alt="">` : '@'}</span><span><b>${escapeHtml(owner.name)}</b><small>Protected from direct mentions</small></span></label>`).join('');
+  $('spam-enabled').checked = current.safetyAdvanced.antiSpam;
+  $('spam-max').value = current.safetyAdvanced.spamMaxMessages;
+  $('spam-seconds').value = current.safetyAdvanced.spamIntervalSeconds;
+  $('mentions-enabled').checked = current.safetyAdvanced.antiMassMentions;
+  $('mentions-max').value = current.safetyAdvanced.maxMentions;
+  $('greeting-cards').checked = current.greetings.cardEnabled;
+  $('welcome-enabled').checked = current.greetings.welcomeEnabled;
+  $('welcome-channel').innerHTML = channelOptions(current.channels, current.greetings.welcomeChannelId, 'Choose a welcome channel');
+  $('welcome-message').value = current.greetings.welcomeMessage;
+  $('goodbye-enabled').checked = current.greetings.goodbyeEnabled;
+  $('goodbye-channel').innerHTML = channelOptions(current.channels, current.greetings.goodbyeChannelId, 'Choose a goodbye channel');
+  $('goodbye-message').value = current.greetings.goodbyeMessage;
+  $('leveling-enabled').checked = current.leveling.enabled;
+  $('leveling-announce').checked = current.leveling.announceLevelUp;
+  $('leveling-channel').innerHTML = channelOptions(current.channels, current.leveling.channelId, 'Choose a level-up channel');
+  $('leveling-xp-min').value = current.leveling.xpMin;
+  $('leveling-xp-max').value = current.leveling.xpMax;
+  $('leveling-cooldown').value = current.leveling.cooldown;
+  $('leveling-multiplier').value = current.leveling.multiplier;
+  levelRewardDraft = current.leveling.roleRewards.map(reward => ({ ...reward }));
+  $('level-reward-role').innerHTML = `<option value="">Choose a role</option>${current.roles.map(role => `<option value="${role.id}">${escapeHtml(role.name)}</option>`).join('')}`;
+  renderLevelRewards();
+  $('logging-enabled').checked = current.logging.enabled;
+  $('logging-moderation-channel').innerHTML = channelOptions(current.channels, current.logging.moderationChannelId, 'Choose a moderation log channel');
+  $('logging-server-channel').innerHTML = channelOptions(current.channels, current.logging.serverChannelId, 'Choose a server log channel');
+  const logGroups = { Moderation: [], Messages: [], Voice: [], Members: [], Channels: [], Server: [] };
+  current.logging.events.forEach(event => {
+    const prefix = event.key.split('.')[0];
+    const group = prefix === 'moderation' ? 'Moderation' : prefix === 'message' ? 'Messages' : prefix === 'voice' ? 'Voice' : prefix === 'member' ? 'Members' : prefix === 'channel' ? 'Channels' : 'Server';
+    logGroups[group].push(event);
+  });
+  const loggingIcons = { Moderation: '◆', Messages: '≡', Voice: '◖', Members: '✦', Channels: '#', Server: '▣' };
+  let collapsedLoggingGroups = {};
+  try { collapsedLoggingGroups = JSON.parse(localStorage.getItem('dexzu-logging-collapsed') || '{}'); } catch { /* Ignore invalid local preferences. */ }
+  const renderLoggingGroup = group => {
+    const events = logGroups[group];
+    if (!events?.length) return '';
+    const open = collapsedLoggingGroups[group] !== true;
+    return `<details class="logging-group" data-log-group="${group}" ${open ? 'open' : ''}><summary><span class="group-title"><i>${loggingIcons[group]}</i><span>${group}</span></span><b class="group-count">${events.filter(event => event.enabled).length} / ${events.length} enabled</b></summary><div class="group-body"><div class="group-actions"><button type="button" data-log-action="on">Enable All</button><button type="button" data-log-action="off">Disable All</button></div><div class="group-events">${events.map(event => checkbox(event.key, event.label, event.enabled, 'logging')).join('')}</div></div></details>`;
+  };
+  const leftGroups = ['Moderation', 'Channels', 'Voice'];
+  const rightGroups = ['Messages', 'Members', 'Server'];
+  $('logging-events').innerHTML = `<div class="logging-column">${leftGroups.map(renderLoggingGroup).join('')}</div><div class="logging-column">${rightGroups.map(renderLoggingGroup).join('')}</div>`;
+  const preview = current.workspace?.serverUpdateEnabled === true;
+  $('youtube-source-controls').hidden = !preview;
+  document.querySelector('.youtube-mention-choice').hidden = !preview;
+  $('youtube-rollout-note').hidden = preview;
+  $('youtube-enabled').checked = current.youtube.enabled;
+  $('youtube-source').value = current.youtube.source?.url || '';
+  $('youtube-mention-everyone').checked = current.youtube.mentionEveryone === true;
+  $('youtube-creator').textContent = current.youtube.source?.name || 'Not configured';
+  $('youtube-preview-copy').textContent = current.youtube.source ? `${current.youtube.source.name} just uploaded a new video!` : 'Your creator’s next upload will appear here.';
+  $('youtube-channel').innerHTML = channelOptions(current.channels, current.youtube.channelId, 'Choose a channel');
+  $('youtube-preview-avatar').src = current.bot.avatar;
+  updateSafetyUi(); updateGreetingUi(); validateLeveling(); updateLoggingUi();
+  safetyPromoDirty = false; safetyPingDirty = false; safetyAdvancedDirty = false; levelingSettingsDirty = false; levelingRewardsDirty = false;
+  ['safety','greetings','leveling','logging'].forEach(page => setDirty(page, false));
+  bindControlEvents();
+  updateYouTubeSummary();
+  renderYouTubeLatest();
+  renderModulePage(location.hash.slice(1));
+  for (const { panel, values } of drafts) for (const saved of values) {
+    const input = saved.id ? $(saved.id) : [...panel.querySelectorAll('input')].find(item => item.dataset.group === saved.group && item.getAttribute('value') === saved.key);
+    if (input) { input.value = saved.value; if (typeof saved.checked === 'boolean') input.checked = saved.checked; }
+  }
+  for (const saved of expanded) {
+    const element = saved.id ? $(saved.id) : [...document.querySelectorAll('details')].find(item => saved.group && item.dataset.logGroup === saved.group);
+    if (element) element.open = saved.open;
+  }
+  if (drafts.length) { updateSafetyUi(); updateGreetingUi(); updateLoggingUi(); }
+}
+
+function selectedYouTubeChannel() {
+  return state?.channels.find(channel => channel.id === $('youtube-channel').value) || null;
+}
+
+function bindControlEvents() {
+  const bind = (ids, page, update) => ids.forEach(id => { const element = $(id); element.oninput = element.onchange = () => { setDirty(page); update?.(); }; });
+  $('promo-enabled').onchange = () => { safetyPromoDirty = true; setDirty('safety'); updateSafetyUi(); };
+  document.querySelectorAll('[data-group=promo],[data-group=ping]').forEach(input => { input.onchange = () => { if (input.dataset.group === 'promo') safetyPromoDirty = true; else safetyPingDirty = true; setDirty('safety'); updateSafetyUi(); input.closest('.check-row')?.classList.toggle('selected', input.checked); }; input.closest('.check-row')?.classList.toggle('selected', input.checked); });
+  $('promo-search').oninput = () => { const query = $('promo-search').value.trim().toLowerCase(); document.querySelectorAll('[data-group=promo]').forEach(input => { input.closest('.check-row').hidden = !input.closest('.check-row').textContent.toLowerCase().includes(query); }); };
+  ['spam-enabled','spam-max','spam-seconds','mentions-enabled','mentions-max'].forEach(id => { $(id).oninput = $(id).onchange = () => { safetyAdvancedDirty = true; setDirty('safety'); updateSafetyUi(); }; });
+  bind(['greeting-cards','welcome-enabled','welcome-channel','welcome-message','goodbye-enabled','goodbye-channel','goodbye-message'], 'greetings', updateGreetingUi);
+  ['leveling-enabled','leveling-announce','leveling-channel','leveling-xp-min','leveling-xp-max','leveling-cooldown','leveling-multiplier'].forEach(id => { $(id).oninput = $(id).onchange = () => { levelingSettingsDirty = true; setDirty('leveling'); validateLeveling(); }; });
+  bind(['logging-enabled','logging-moderation-channel','logging-server-channel'], 'logging', updateLoggingUi);
+  document.querySelectorAll('[data-group=logging]').forEach(input => { input.onchange = () => { setDirty('logging'); updateLoggingUi(); }; });
+  document.querySelectorAll('[data-log-action]').forEach(button => { button.onclick = () => { button.closest('.logging-group').querySelectorAll('[data-group=logging]').forEach(input => { input.checked = button.dataset.logAction === 'on'; }); setDirty('logging'); updateLoggingUi(); }; });
+  document.querySelectorAll('.logging-group').forEach(group => { group.ontoggle = () => { if ($('logging-search').value.trim()) return; let collapsed = {}; try { collapsed = JSON.parse(localStorage.getItem('dexzu-logging-collapsed') || '{}'); } catch { /* Replace invalid local preferences. */ } collapsed[group.dataset.logGroup] = !group.open; localStorage.setItem('dexzu-logging-collapsed', JSON.stringify(collapsed)); }; });
+  $('logging-all').onclick = () => { document.querySelectorAll('[data-group=logging]').forEach(input => { input.checked = true; }); setDirty('logging'); updateLoggingUi(); };
+  $('logging-none').onclick = () => { document.querySelectorAll('[data-group=logging]').forEach(input => { input.checked = false; }); setDirty('logging'); updateLoggingUi(); };
+  $('logging-search').oninput = () => { const query = $('logging-search').value.trim().toLowerCase(); document.querySelectorAll('.logging-group').forEach(group => { let visible = 0; group.querySelectorAll('.check-row').forEach(row => { row.hidden = !row.textContent.toLowerCase().includes(query); if (!row.hidden) visible += 1; }); group.hidden = visible === 0; if (query && visible) group.open = true; }); updateLoggingUi(); };
+  $('logging-discard').onclick = () => { setDirty('logging', false); render(state); };
+}
+
+function updateYouTubeSummary() {
+  if (!state) return;
+  const enabled = $('youtube-enabled').checked;
+  const channel = selectedYouTubeChannel();
+  $('youtube-state-label').textContent = enabled ? 'Active' : 'Disabled';
+  $('youtube-state-pill').classList.toggle('active', enabled);
+  $('youtube-destination').textContent = channel ? `#${channel.name}` : 'Not configured';
+  $('youtube-hero').classList.toggle('disabled', !enabled);
+  $('youtube-control').classList.toggle('alerts-disabled', !enabled);
+  $('youtube-service-status').innerHTML = [
+    ['YouTube alerts', enabled ? 'Active' : 'Disabled', enabled ? 'good' : ''],
+    ['Destination', channel ? `#${channel.name}` : 'Not configured', channel ? 'good' : 'warning'],
+    ['Duplicate protection', 'Enabled', 'good'],
+    ...(state.youtube.lastCheckedAt ? [['Last feed check', new Date(state.youtube.lastCheckedAt).toLocaleString(), state.youtube.lastError ? 'warning' : 'good']] : []),
+    ...(state.youtube.lastPostedAt ? [['Last notification', new Date(state.youtube.lastPostedAt).toLocaleString(), 'good']] : []),
+    ...(state.youtube.lastError ? [['Alert health', state.youtube.lastError, 'bad']] : [['Alert health', 'Healthy', 'good']]),
+  ].map(([label, value, status]) => `<div class="status-row"><span>${escapeHtml(label)}</span><strong><i class="status-dot ${status}"></i>${escapeHtml(value)}</strong></div>`).join('');
+}
+
+function renderYouTubeNotifications() {
+  const container = $('youtube-notifications');
+  const deliveries = state?.youtube?.deliveries || [];
+  if (!deliveries.length) {
+    container.className = 'youtube-empty compact';
+    container.innerHTML = '<span>≡</span><strong>No notifications yet</strong><p>New upload notifications for this server will appear here.</p>';
+    return;
+  }
+  container.className = 'youtube-notification-list';
+  container.innerHTML = deliveries.map(delivery => `<a class="notification-item" href="${escapeHtml(delivery.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(delivery.thumbnailUrl)}" alt=""><span><strong>${escapeHtml(delivery.title)}</strong><small>${escapeHtml(new Date(delivery.sentAt || delivery.detectedAt).toLocaleString())} · ${delivery.attempts || 1} attempt${delivery.attempts === 1 ? '' : 's'}</small><em class="delivery-${escapeHtml(delivery.status)}">${escapeHtml(delivery.status)}</em></span></a>`).join('');
+}
+
+function renderYouTubeLatest() {
+  if (!state) return;
+  renderYouTubeNotifications();
+  const latest = $('youtube-latest');
+  const previewMedia = $('youtube-preview-media');
+  const latestLink = $('youtube-latest-link');
+  const previewLink = $('youtube-preview-link');
+  if (!youtubeLatest) {
+    latest.className = 'youtube-empty';
+    latest.innerHTML = '<span>▶</span><strong>No upload information available yet.</strong>';
+    latestLink.removeAttribute('href'); previewLink.removeAttribute('href');
+    $('youtube-preview-title').textContent = 'Video title preview';
+    previewMedia.innerHTML = '<span>▶</span>';
+    return;
+  }
+  const published = youtubeLatest.publishedAt ? new Date(youtubeLatest.publishedAt).toLocaleString() : 'Publish time unavailable';
+  const notified = state.youtube.lastVideoId === youtubeLatest.id && Boolean(state.youtube.lastPostedAt);
+  latest.className = 'latest-video';
+  latest.innerHTML = `<img src="${escapeHtml(youtubeLatest.thumbnailUrl)}" alt="Latest upload thumbnail"><div><p class="eyebrow">${escapeHtml(state.youtube.source?.name || 'YouTube')}</p><h3>${escapeHtml(youtubeLatest.title)}</h3><p>${escapeHtml(published)}</p><span class="sent-status">${notified ? '✓ Notification sent' : 'Waiting for next upload'}</span></div>`;
+  latestLink.href = youtubeLatest.url; previewLink.href = youtubeLatest.url;
+  $('youtube-preview-title').textContent = youtubeLatest.title;
+  previewMedia.innerHTML = `<img src="${escapeHtml(youtubeLatest.thumbnailUrl)}" alt="Latest upload preview">`;
+}
+
+async function loadYouTubeLatest() {
+  if (youtubeLatestLoaded) return;
+  youtubeLatestLoaded = true;
+  const requestId = ++youtubeLatestRequest;
+  try {
+    const response = await fetch(dashboardApiUrl('youtube/latest'), { cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Latest upload unavailable');
+    if (requestId !== youtubeLatestRequest) return;
+    youtubeLatest = data.video;
+  } catch (error) {
+    if (requestId !== youtubeLatestRequest) return;
+    youtubeLatest = null;
+  }
+  renderYouTubeLatest();
+}
+
+async function load() {
+  const response = await fetch(dashboardApiUrl('state'), { cache: 'no-store' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Could not load dashboard');
+  if (data.workspace?.key !== dashboardWorkspace && data.workspace?.guildId !== dashboardWorkspace) throw new Error('The selected workspace could not be verified. Reload before making changes.');
+  render(data);
+}
+
+$('refresh-dashboard').onclick = async () => {
+  const button = $('refresh-dashboard');
+  button.classList.add('loading');
+  button.disabled = true;
+  try { await load(); toast('Refreshed', false, 'System status updated.'); }
+  catch (error) { button.classList.add('refresh-failed'); feedbackLater(() => button.classList.remove('refresh-failed'), 350); toast(error.message, true); }
+  finally { button.classList.remove('loading'); button.disabled = false; }
+};
+
+$('save-promo').onclick = async () => { try { const allowedChannelIds = [...document.querySelectorAll('[data-group=promo]:checked')].map(input => input.value); await post('anti-promo', { enabled: $('promo-enabled').checked, allowedChannelIds }); state.antiPromo = { enabled: $('promo-enabled').checked, allowedChannelIds }; safetyPromoDirty = false; setDirty('safety', safetyPingDirty || safetyAdvancedDirty); showSaved($('save-promo')); toast('Promotion filter saved'); } catch (error) { toast("Couldn't save promotion filter", true, error.message); } };
+$('save-ping').onclick = async () => { try { const protectedUserIds = [...document.querySelectorAll('[data-group=ping]:checked')].map(input => input.value); await post('anti-ping', { protectedUserIds }); state.antiPing.protectedUserIds = protectedUserIds; safetyPingDirty = false; setDirty('safety', safetyPromoDirty || safetyAdvancedDirty); showSaved($('save-ping')); toast('Mention protection saved'); } catch (error) { toast("Couldn't save mention protection", true, error.message); } };
+$('save-safety-advanced').onclick = async () => { const settings = { antiSpam: $('spam-enabled').checked, spamMaxMessages: Number($('spam-max').value), spamIntervalSeconds: Number($('spam-seconds').value), antiMassMentions: $('mentions-enabled').checked, maxMentions: Number($('mentions-max').value) }; try { await post('safety/advanced', settings); state.safetyAdvanced = settings; safetyAdvancedDirty = false; setDirty('safety', safetyPromoDirty || safetyPingDirty); showSaved($('save-safety-advanced'), '✓ Save Advanced Safety'); toast('Advanced safety settings saved'); } catch (error) { toast("Couldn't save advanced safety settings", true, error.message); } };
+$('save-greetings').onclick = async () => { try { const settings = { cardEnabled: $('greeting-cards').checked, welcomeEnabled: $('welcome-enabled').checked, welcomeChannelId: $('welcome-channel').value, welcomeMessage: $('welcome-message').value, goodbyeEnabled: $('goodbye-enabled').checked, goodbyeChannelId: $('goodbye-channel').value, goodbyeMessage: $('goodbye-message').value }; await post('greetings', settings); state.greetings = { ...state.greetings, ...settings }; setDirty('greetings', false); showSaved($('save-greetings')); toast('Greeting settings saved'); } catch (error) { toast("Couldn't save greeting settings", true, error.message); } };
+$('save-leveling').onclick = async () => {
+  const button = $('save-leveling');
+  if (button.disabled) return;
+  if (!validateLeveling()) return;
+  button.disabled = true;
+  button.textContent = 'Saving...';
+  try {
+    const settings = {
+      enabled: $('leveling-enabled').checked,
+      announceLevelUp: $('leveling-announce').checked,
+      channelId: $('leveling-channel').value,
+      xpMin: Number($('leveling-xp-min').value),
+      xpMax: Number($('leveling-xp-max').value),
+      cooldown: Number($('leveling-cooldown').value),
+      multiplier: Number($('leveling-multiplier').value),
+    };
+    await post('leveling', settings);
+    state.leveling = { ...state.leveling, ...settings }; levelingSettingsDirty = false; setDirty('leveling', levelingRewardsDirty);
+    showSaved(button);
+    toast('Leveling settings saved');
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+    button.textContent = '✓ Save Changes';
+  }
+};
+$('add-level-reward').onclick = () => {
+  const level = Number($('level-reward-level').value);
+  const roleId = $('level-reward-role').value;
+  let error = '';
+  if (!Number.isInteger(level) || level < 1 || level > 500) error = 'Choose a whole level from 1 to 500.';
+  else if (!roleId) error = 'Choose a role to award.';
+  else if (levelRewardDraft.some(reward => reward.level === level)) error = `Level ${level} already has a reward. Remove it first to replace it.`;
+  else if (levelRewardDraft.length >= 25) error = 'You can configure up to 25 level role rewards.';
+  $('level-reward-error').textContent = error;
+  if (error) return;
+  levelRewardDraft.push({ level, roleId });
+  $('level-reward-level').value = '';
+  $('level-reward-role').value = '';
+  levelingRewardsDirty = true; setDirty('leveling'); renderLevelRewards();
+};
+$('save-level-rewards').onclick = async () => {
+  const button = $('save-level-rewards'); button.disabled = true;
+  try {
+    const result = await post('leveling/rewards', { roleRewards: levelRewardDraft });
+    state.leveling.roleRewards = levelRewardDraft.map(reward => ({ ...reward }));
+    levelingRewardsDirty = false; setDirty('leveling', levelingSettingsDirty);
+    showSaved(button, '✓ Save Role Rewards');
+    toast('Level role rewards saved', false, result.rolesAwarded ? `${result.rolesAwarded} existing role assignment${result.rolesAwarded === 1 ? '' : 's'} added.` : 'New rewards apply automatically.');
+  } catch (error) { toast("Couldn't save level role rewards", true, error.message); }
+  finally { button.disabled = false; }
+};
+$('reset-leveling').onclick = async () => { if (!confirm(`Reset all XP?\n\nThis will permanently reset XP and levels for every member in ${state.server.name}. This action cannot be undone.`)) return; const confirmation = prompt(`Type ${state.server.name} to confirm the reset:`); if (confirmation === null) return; try { const result = await post('leveling/reset', { confirm: confirmation }); toast(`Reset XP for ${result.resetCount} members`); } catch (error) { toast(error.message, true); } };
+$('save-logging').onclick = async () => { try { const enabledEventTypes = [...document.querySelectorAll('[data-group=logging]:checked')].map(input => input.value); const enabled = $('logging-enabled').checked; const moderationChannelId = $('logging-moderation-channel').value; const serverChannelId = $('logging-server-channel').value; await post('logging', { enabled, moderationChannelId, serverChannelId, enabledEventTypes }); state.logging.enabled = enabled; state.logging.moderationChannelId = moderationChannelId; state.logging.serverChannelId = serverChannelId; state.logging.events.forEach(event => { event.enabled = enabledEventTypes.includes(event.key); }); setDirty('logging', false); showSaved($('save-logging')); toast('Logging settings saved'); } catch (error) { toast("Couldn't save logging settings", true, error.message); } };
+for (const [id, destination] of [['test-moderation-log', 'moderation'], ['test-server-log', 'server']]) {
+  $(id).onclick = async () => { const button = $(id); button.disabled = true; try { const result = await post('logging/test', { destination }); toast(`${destination === 'moderation' ? 'Moderation' : 'Server'} test log sent`, false, `Delivered to #${result.channelName}.`); } catch (error) { toast("Couldn't send test log", true, error.message); } finally { button.disabled = false; } };
+}
+function youtubeSettings(enabled) {
+  if (state.workspace?.serverUpdateEnabled !== true) return { enabled, channelId: $('youtube-channel').value };
+  return { enabled, channelId: $('youtube-channel').value,
+    ...(enabled && $('youtube-source').value.trim() ? { sourceInput: $('youtube-source').value.trim() } : {}),
+    mentionEveryone: $('youtube-mention-everyone').checked };
+}
+async function savedYouTubeSettings(result, fallback) {
+  state.youtube = { ...state.youtube, ...fallback, ...(result.alert || {}) };
+  youtubeLatestRequest++; youtubeLatest = null; youtubeLatestLoaded = false;
+  $('youtube-creator').textContent = state.youtube.source?.name || 'Not configured';
+  $('youtube-preview-copy').textContent = state.youtube.source ? `${state.youtube.source.name} just uploaded a new video!` : 'Your creator’s next upload will appear here.';
+  renderYouTubeLatest(); renderYouTubeNotifications();
+  await loadYouTubeLatest();
+}
+for (const id of ['youtube-source','youtube-mention-everyone']) $(id).oninput = () => { document.querySelector('.youtube-config').classList.add('dirty'); };
+$('youtube-channel').onchange = () => { document.querySelector('.youtube-config').classList.add('dirty'); updateYouTubeSummary(); };
+$('youtube-enabled').onchange = async () => {
+  const input = $('youtube-enabled'); const previous = !input.checked; const enabled = input.checked;
+  input.disabled = true; updateYouTubeSummary();
+  try {
+    const settings = youtubeSettings(enabled);
+    const result = await post('youtube', settings);
+    await savedYouTubeSettings(result, settings);
+    document.querySelector('.youtube-config').classList.remove('dirty');
+    toast(`YouTube alerts ${enabled ? 'enabled' : 'disabled'}`);
+  } catch (error) {
+    input.checked = previous; updateYouTubeSummary();
+    toast(`Couldn't ${enabled ? 'enable' : 'disable'} YouTube alerts`, true, error.message);
+  } finally { input.disabled = false; }
+};
+$('save-youtube').onclick = async () => {
+  const button = $('save-youtube'); button.disabled = true;
+  try {
+    const enabled = $('youtube-enabled').checked; const channelId = $('youtube-channel').value;
+    const settings = youtubeSettings(enabled);
+    const result = await post('youtube', settings);
+    await savedYouTubeSettings(result, settings);
+    document.querySelector('.youtube-config').classList.remove('dirty'); updateYouTubeSummary();
+    showSaved(button);
+    toast('YouTube settings saved');
+  } catch (error) { toast("Couldn't save YouTube settings", true, error.message); }
+  finally { button.disabled = false; }
+};
+$('test-youtube').onclick = async () => {
+  if (document.querySelector('.youtube-config').classList.contains('dirty')) { toast('Save your YouTube settings before testing.', 'warning'); return; }
+  const channel = state?.channels.find(item => item.id === state.youtube.channelId);
+  if (!channel) { toast('Save a destination channel first', 'warning'); return; }
+  if (!confirm(`Send a test notification to #${channel.name}?`)) return;
+  const button = $('test-youtube'); button.disabled = true;
+  try { await post('youtube/test', { channelId: channel.id }); toast('Test notification sent', false, `Posted in #${channel.name}.`); }
+  catch (error) { toast("Couldn't send test notification", true, error.message); }
+  finally { button.disabled = false; }
+};
+$('check-youtube').onclick = async () => { const button = $('check-youtube'); button.disabled = true; try { const result = await post('youtube/check', {}); state.youtube = { ...state.youtube, ...result.status }; updateYouTubeSummary(); renderYouTubeNotifications(); toast(result.status.lastError ? 'YouTube check completed with a warning' : 'YouTube feed is healthy', result.status.lastError ? 'warning' : false, result.status.lastError || 'Delivery history is up to date.'); } catch (error) { toast("Couldn't check YouTube", true, error.message); } finally { button.disabled = false; } };
+$('retry-youtube').onclick = async () => { const button = $('retry-youtube'); button.disabled = true; try { const result = await post('youtube/retry', {}); state.youtube = { ...state.youtube, ...result.status }; updateYouTubeSummary(); renderYouTubeNotifications(); toast(result.status.queued ? `Retried ${result.status.queued} failed alert(s)` : 'No failed alerts to retry'); } catch (error) { toast("Couldn't retry YouTube alerts", true, error.message); } finally { button.disabled = false; } };
+$('run-health-check').onclick = async () => { const button = $('run-health-check'); button.disabled = true; try { const result = await post('operations/health', {}); state.operations.health = result.health; renderOperations(); toast(result.health.failed ? 'Health check found problems' : 'All required checks passed', result.health.failed ? 'warning' : false); } catch (error) { toast('Health check failed', true, error.message); } finally { button.disabled = false; } };
+$('save-access-roles').onclick = async () => { const button = $('save-access-roles'); button.disabled = true; try { const roleIds = [...document.querySelectorAll('[data-group=access-role]:checked')].map(input => input.value); const result = await post('operations/access-roles', { roleIds }); state.commandAccessRoleIds = result.roleIds; showSaved(button, '✓ Save Roles'); toast('Staff command roles saved', false, 'Discord command access was synchronized.'); await load(); } catch (error) { toast("Couldn't save staff roles", true, error.message); } finally { button.disabled = false; } };
+$('create-snapshot').onclick = async () => { const button = $('create-snapshot'); button.disabled = true; try { await post('operations/snapshot', {}); toast('Configuration snapshot created'); await load(); } catch (error) { toast("Couldn't create snapshot", true, error.message); } finally { button.disabled = false; } };
+load().catch(error => toast(error.message, true));
+let activityTimer;
+const startActivityPolling = () => { clearInterval(activityTimer); activityTimer = setInterval(() => { if (!document.hidden) void refreshRecentActivity(); }, 30000); };
+startActivityPolling();
+window.addEventListener('pagehide', () => clearInterval(activityTimer));
+window.addEventListener('pageshow', startActivityPolling);
+window.addEventListener('resize', updateNavIndicator, { passive: true });
+document.querySelector('.sidebar')?.addEventListener('scroll', updateNavIndicator, { passive: true });
+
+window.addEventListener('beforeunload', event => {
+  if (!dirtyPages.size && !pendingDashboardWrites && !document.querySelector('.youtube-config.dirty')) return;
+  event.preventDefault(); event.returnValue = '';
+});

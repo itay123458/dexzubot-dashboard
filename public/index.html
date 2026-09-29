@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>DexzuBot Control</title>
+  <link rel="stylesheet" href="/dashboard/style.css">
+  <link rel="stylesheet" href="/dashboard/dashboard-controls.css">
+  <link rel="stylesheet" href="/dashboard/dashboard-polish.css">
+  <link rel="stylesheet" href="/dashboard/youtube-dashboard.css">
+  <link rel="stylesheet" href="/dashboard/control-pages.css">
+  <link rel="stylesheet" href="/dashboard/beta-roles.css">
+  <link rel="stylesheet" href="/dashboard/embed-motion.css">
+  <link rel="stylesheet" href="/dashboard/community-beta.css">
+  <link rel="stylesheet" href="/dashboard/faith.css">
+  <link rel="stylesheet" href="/dashboard/food-collection.css">
+  <link rel="stylesheet" href="/dashboard/dashboard-access.css">
+  <link rel="stylesheet" href="/dashboard/workspace.css"><link rel="stylesheet" href="/dashboard/command-center.css?v=2">
+</head>
+<body>
+  <a class="skip-link" href="#dashboard-main">Skip to content</a>
+  <div class="app-shell">
+    <header class="sidebar control-header">
+      <div class="brand">
+        <div class="brand-avatar"><img id="bot-avatar" alt="DexzuBot avatar"></div>
+        <div><strong>DEXZUBOT</strong><span class="regular-brand" hidden>CONTROL CENTER</span><span class="halloween-brand"><svg aria-hidden="true" viewBox="0 0 32 32" width="14" height="14"><path d="M16 9c-2-5 1-7 4-7M16 10C3 3 0 25 11 28c3 1 4 0 5-1 1 1 2 2 5 1C32 25 29 3 16 10Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 17 5-3 1 5Zm10 2 1-5 5 3ZM9 23l4 1 3-2 3 2 4-1" fill="currentColor"/></svg> HALLOWEEN EDITION</span></div>
+        <button id="sidebar-collapse" class="collapse-button" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">‹</button>
+        <button id="mobile-navigation" class="mobile-navigation" type="button" aria-expanded="false" aria-controls="dashboard-navigation">Menu</button>
+      </div>
+
+      <button id="open-control-search" class="control-search" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><span>Search control center</span><kbd>Ctrl K</kbd></button>
+      <nav id="dashboard-navigation" class="dashboard-nav" aria-label="Dashboard sections">
+        <i id="nav-active-indicator" class="nav-active-indicator" aria-hidden="true"></i>
+        <p class="nav-label">Control</p>
+        <button class="nav-item active" data-page="overview" title="Overview"><span class="nav-icon">⌂</span><span>Overview</span></button>
+        <button class="nav-item" data-page="safety" title="Safety"><span class="nav-icon">◇</span><span>Safety</span></button>
+        <p class="nav-label nav-group">Server</p>
+        <button id="faith-nav" class="nav-item" data-page="faith" title="Faith" hidden><span class="nav-icon"></span><span>Faith</span></button>
+        <button class="nav-item" data-page="greetings" title="Greetings"><span class="nav-icon">✦</span><span>Greetings</span></button>
+        <button class="nav-item" data-page="leveling" title="Leveling"><span class="nav-icon">↗</span><span>Leveling</span></button>
+        <button class="nav-item" data-page="logging" title="Logging"><span class="nav-icon">≡</span><span>Logging</span></button>
+        <button class="nav-item" data-page="youtube" title="YouTube"><span class="nav-icon">▶</span><span>YouTube</span></button>
+        <button class="nav-item" data-page="operations" title="Operations"><span class="nav-icon">⚙</span><span>Operations</span></button>
+        <p class="nav-label nav-group">Modules</p>
+        <button class="nav-item" data-page="module-counting" title="Counting"><span class="nav-icon">#</span><span>Counting</span></button>
+        <button class="nav-item" data-page="module-economy" title="Economy"><span class="nav-icon">◇</span><span>Economy</span></button>
+        <button class="nav-item" data-page="module-moderation" title="Moderation"><span class="nav-icon">◆</span><span>Moderation</span></button>
+        <button class="nav-item" data-page="module-ticket" title="Tickets"><span class="nav-icon">▣</span><span>Tickets</span></button>
+        <button class="nav-item" data-page="module-serverstats" title="Server Stats"><span class="nav-icon">▥</span><span>Server Stats</span></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div id="online-pill" class="pill">Checking status</div>
+        <small>Connected. Protected. Yours.</small>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div><p class="breadcrumb">DexzuBot <span>/</span> <b id="breadcrumb-page">Overview</b></p><h1 id="page-title">Server overview</h1><p id="page-description">Your community, your controls. All in one place.</p></div>
+        <div class="leveling-header-control"><label for="leveling-enabled">Enable leveling</label><label class="switch"><input id="leveling-enabled" type="checkbox"><span></span></label></div>
+        <div class="workspace-context">
+          <label class="server-select-label" for="server-selector">Server<select id="server-selector" disabled><option>Loading servers…</option></select></label>
+          <nav class="workspace-switch" aria-label="Server workspace">
+            <a href="/dashboard/" data-workspace="main">Main</a>
+            <a href="/dashboard/?workspace=beta" data-workspace="beta">Beta</a>
+          </nav>
+          <div class="server-chip"><img id="server-icon" alt="Server icon"><span><small id="workspace-label">Currently managing</small><strong id="server-name">Connecting…</strong></span><i id="server-status-dot"></i></div>
+        </div>
+      </header>
+      <aside id="dashboard-session" class="dashboard-session" hidden aria-label="Dashboard session"><span id="dashboard-session-label"></span><button id="dashboard-logout" type="button" class="secondary-button" hidden>Log out</button><span id="dashboard-session-status" role="status"></span></aside>
+      <aside id="workspace-notice" class="workspace-notice" hidden><strong>Beta workspace</strong><span>Changes here apply to your beta server. Bot status is shared with Main.</span></aside>
+
+      <main id="dashboard-main" tabindex="-1">
+        <section class="page active" data-panel="overview">
+          <article class="bot-banner seasonal-hero" aria-label="Bot connection and runtime">
+            <div class="seasonal-hero-copy">
+              <p class="season-kicker"><span aria-hidden="true">&#10022;</span> THE HALLOWEEN EDITION <span class="season-year">2026</span></p>
+              <h2>Your server,<br><span>after dark.</span></h2>
+              <p class="season-description">Keep the good company. Handle the chaos.<br>Your community is right where you left it.</p>
+              <div class="hero-actions"><button id="overview-modules-link" type="button">Manage commands <span aria-hidden="true">&#8599;</span></button><button class="secondary-button" type="button" data-open-page="operations">Server settings</button></div>
+            </div>
+            <img class="seasonal-illustration" src="/dashboard/halloween-garden.svg" alt="" width="280" height="240" aria-hidden="true">
+            <div class="hero-status-strip">
+              <div class="bot-identity"><img id="hero-bot-avatar" alt="" width="40" height="40"><div><strong>DexzuBot</strong><p id="hero-connection">Connecting to your bot...</p></div></div>
+              <dl class="runtime-stats"><div><dt>Uptime</dt><dd id="hero-uptime">&#8212;</dd></div><div><dt>Memory</dt><dd id="hero-memory">&#8212;</dd></div><div><dt>Discord API</dt><dd id="hero-api">Checking</dd></div></dl>
+            </div>
+          </article>
+          <section class="metrics" id="metrics" aria-label="Server statistics"><div class="metric skeleton"></div><div class="metric skeleton"></div><div class="metric skeleton"></div><div class="metric skeleton"></div></section>
+          <div class="insight-grid">
+            <article class="card activity-card"><div class="card-head"><div><p class="eyebrow">EVENT STREAM</p><h2>Live activity</h2><p>Latest events from DexzuBot.</p></div><button id="view-logs" class="secondary-button">View all</button></div><div id="recent-activity" class="activity-feed"><div class="empty-state"><span class="empty-icon">≡</span><strong>No recent activity</strong><p>New DexzuBot events will appear here.</p></div></div></article>
+            <aside class="overview-rail"><article class="card status-card"><div class="card-head"><div><p class="eyebrow">LIVE SYSTEM</p><h2>System Status</h2></div><button id="refresh-dashboard" class="icon-button" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button></div><div id="system-status" class="system-status"><div class="status-row skeleton-line"></div><div class="status-row skeleton-line"></div></div></article><article class="card performance-card"><div class="card-head"><div><p class="eyebrow">RUNTIME</p><h2>Server at a glance</h2></div></div><div id="performance" class="performance-list"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article></aside>
+          </div>
+          <div class="overview-grid overview-modules">
+          <article class="card modules-card">
+            <div class="card-head"><div><p class="eyebrow">ACCESS</p><div class="section-title-row"><h2 id="command-modules-heading" tabindex="-1">Command modules</h2><span class="status-note"><i></i> Applies instantly</span></div><p>Enable or disable bot systems for this server.</p></div></div>
+            <div id="categories" class="toggle-grid"></div>
+          </article>
+          </div>
+          <article id="beta-release-notes" class="card beta-release-card" hidden aria-labelledby="beta-release-heading">
+            <div class="card-head"><div><p class="eyebrow">DEXZUBOT / RELEASE NOTES</p><h2 id="beta-release-heading">What changed</h2></div><button type="button" id="open-beta-roles" class="secondary-button">Open role controls</button></div>
+            <div id="beta-release-content" aria-live="polite">Loading release notes…</div>
+          </article>
+        </section>
+
+        <section class="page" data-panel="safety">
+          <div class="feature-heading"><div><p class="eyebrow">PROTECTION</p><h2>Safety Controls</h2><p>Protect the server from unwanted promotions and direct mentions.</p></div><div id="safety-summary" class="mini-summary"></div></div>
+          <div class="split-grid control-grid">
+            <article class="card control-card" data-dirty-form="safety-promo">
+              <div class="card-head"><div class="feature-title"><span class="feature-icon">◇</span><div><p class="eyebrow">PROMOTION FILTER</p><h2>Promotion Filter</h2><p>Control where promotional content is allowed.</p></div></div><label class="switch"><input id="promo-enabled" type="checkbox"><span></span></label></div>
+              <label class="field-label" for="promo-search">Allowed channels</label><input id="promo-search" class="search-input" type="search" placeholder="Search channels…">
+              <div id="promo-channels" class="check-list"></div>
+              <div class="card-actions"><span id="promo-count">0 channels selected</span><button id="save-promo">✓ Save Changes</button></div>
+            </article>
+            <article class="card control-card" data-dirty-form="safety-ping">
+              <div class="card-head"><div class="feature-title"><span class="feature-icon">@</span><div><p class="eyebrow">MENTION PROTECTION</p><h2>Mention Protection</h2><p>Protect selected members from direct <code>@mentions</code>.</p></div></div></div>
+              <div id="ping-owners" class="check-list"></div>
+              <div class="card-actions"><span id="ping-count">0 members protected</span><button id="save-ping">✓ Save Changes</button></div>
+            </article>
+          </div>
+          <div class="split-grid control-grid advanced-safety" data-dirty-form="safety-advanced">
+            <article class="card control-card"><div class="card-head"><div class="feature-title"><span class="feature-icon">≋</span><div><p class="eyebrow">ANTI SPAM</p><h2>Message Rate Protection</h2><p>Remove messages when members send too many too quickly.</p></div></div><label class="switch"><input id="spam-enabled" type="checkbox"><span></span></label></div><div class="safety-number-grid"><label>Messages allowed<input id="spam-max" type="number" min="3" max="10"></label><label>Time window<input id="spam-seconds" type="number" min="3" max="30"><small>seconds</small></label></div></article>
+            <article class="card control-card"><div class="card-head"><div class="feature-title"><span class="feature-icon">＠</span><div><p class="eyebrow">MASS MENTIONS</p><h2>Mention Limit</h2><p>Remove messages that ping too many users or roles.</p></div></div><label class="switch"><input id="mentions-enabled" type="checkbox"><span></span></label></div><div class="safety-number-grid one"><label>Maximum mentions per message<input id="mentions-max" type="number" min="2" max="20"></label></div></article>
+          </div>
+          <div class="page-save-row safety-advanced-save"><span class="dirty-label">● Unsaved advanced settings</span><button id="save-safety-advanced">✓ Save Advanced Safety</button></div>
+          <article class="card how-card"><p class="eyebrow">HOW IT WORKS</p><div><span><b>Promotion Filter</b> Links are allowed only in selected channels.</span><span><b>Mention Protection</b> Protects selected owners.</span><span><b>Anti Spam</b> Limits rapid messages.</span><span><b>Mention Limit</b> Blocks mass pings.</span></div></article>
+        </section>
+
+        <section class="page" data-panel="greetings">
+          <div class="feature-heading"><div><p class="eyebrow">MEMBER EXPERIENCE</p><h2>Welcome &amp; Goodbye</h2><p>Personalized cards and messages for members joining or leaving.</p></div><label class="switch feature-switch"><input id="greeting-cards" type="checkbox"><span></span></label></div>
+          <div id="greeting-summary" class="summary-grid two"></div>
+          <div class="split-grid control-grid" data-dirty-form="greetings">
+            <article class="card control-card"><div class="card-head"><div class="feature-title"><span class="feature-icon">＋</span><div><p class="eyebrow">WELCOME MESSAGE</p><h2>Welcome Members</h2></div></div><label class="switch"><input id="welcome-enabled" type="checkbox"><span></span></label></div><label class="field-label" for="welcome-channel">Destination channel</label><select id="welcome-channel"></select><label class="field-label" for="welcome-message">Message template</label><input id="welcome-message" type="text" maxlength="1000" placeholder="Welcome {user} to {server}!"><p class="variable-help">Available: <code>{user}</code> <code>{server}</code></p><div id="welcome-preview" class="greeting-preview"><span>Preview</span><strong>Welcome ExampleUser</strong><p></p></div></article>
+            <article class="card control-card"><div class="card-head"><div class="feature-title"><span class="feature-icon">−</span><div><p class="eyebrow">GOODBYE MESSAGE</p><h2>Goodbye Members</h2></div></div><label class="switch"><input id="goodbye-enabled" type="checkbox"><span></span></label></div><label class="field-label" for="goodbye-channel">Destination channel</label><select id="goodbye-channel"></select><label class="field-label" for="goodbye-message">Message template</label><input id="goodbye-message" type="text" maxlength="1000" placeholder="Goodbye {user.tag}"><p class="variable-help">Available: <code>{user.tag}</code> <code>{server}</code></p><div id="goodbye-preview" class="greeting-preview goodbye"><span>Preview</span><strong>Goodbye ExampleUser</strong><p></p></div></article>
+          </div>
+          <div class="page-save-row"><span class="dirty-label">● Unsaved changes</span><button id="save-greetings">✓ Save Changes</button></div>
+        </section>
+
+        <section class="page" data-panel="leveling">
+          <div class="leveling-settings" data-dirty-form="leveling">
+            <div class="leveling-setting-row"><div><h2>XP per message</h2><p>A random amount within this range.</p></div><div class="leveling-range"><label>Minimum<input id="leveling-xp-min" type="number" min="1" max="1000"></label><span aria-hidden="true">–</span><label>Maximum<input id="leveling-xp-max" type="number" min="1" max="1000"></label></div></div>
+            <div class="leveling-setting-row"><div><label for="leveling-cooldown">Message cooldown</label><p>How long a member waits before earning XP again.</p></div><div class="leveling-unit"><input id="leveling-cooldown" type="number" min="0" max="3600"><span>seconds</span></div></div>
+            <div class="leveling-setting-row"><div><label for="leveling-multiplier">XP multiplier</label><p>1× is the normal earning rate.</p></div><div class="leveling-unit"><input id="leveling-multiplier" type="number" min="0.1" max="10" step="0.1"><span>×</span></div></div>
+            <div class="leveling-setting-row"><div><label for="leveling-announce">Level-up announcements</label><p>Post a message when a member reaches a new level.</p></div><label class="switch"><input id="leveling-announce" type="checkbox"><span></span></label></div>
+            <div class="leveling-setting-row leveling-destination"><div><label for="leveling-channel">Announcement channel</label><p>The announcement message is fixed.</p></div><div><select id="leveling-channel"></select><p class="leveling-message-sample"><span>Message preview</span><span><b>@ExampleUser</b> has leveled up to level <b>12</b>!</span></p></div></div>
+            <p id="leveling-error" class="inline-error" role="alert"></p>
+          </div>
+          <div class="page-save-row"><span class="dirty-label">● Unsaved changes</span><button id="save-leveling">Save settings</button></div>
+          <article class="card level-rewards-card">
+            <div class="card-head"><div><h2>Role rewards</h2><p>Assign a role when a member reaches its required level.</p></div><span id="level-reward-count" class="status-note">0 configured</span></div>
+            <div class="level-reward-builder"><label>Level<input id="level-reward-level" type="number" min="1" max="500" placeholder="5"></label><label>Role<select id="level-reward-role"></select></label><button id="add-level-reward" type="button">Add role</button></div>
+            <p id="level-reward-error" class="inline-error"></p>
+            <div id="level-reward-list" class="level-reward-list"></div>
+            <div class="card-actions"><span>DexzuBot can only assign roles below its highest role.</span><button id="save-level-rewards" type="button">✓ Save Role Rewards</button></div>
+          </article>
+          <article class="card danger-card"><div><p class="eyebrow">DANGER ZONE</p><h2>Reset All XP</h2><p>Permanently reset every member's XP and level to 0. This action cannot be undone.</p></div><button id="reset-leveling" class="danger-button">Reset Everyone</button></article>
+        </section>
+
+        <section class="page" data-panel="module">
+          <div id="module-page-content"></div>
+        </section>
+
+        <section class="page" data-panel="logging">
+          <div class="feature-heading"><div><p class="eyebrow">AUDIT LOG</p><h2>Server Logging</h2><p>Choose which server events DexzuBot records.</p></div><label class="switch feature-switch"><input id="logging-enabled" type="checkbox"><span></span></label></div>
+          <div id="logging-summary" class="summary-grid four"></div>
+          <article class="card destination-card" data-dirty-form="logging"><div class="card-head"><div><p class="eyebrow">LOG DESTINATIONS</p><h2>Logging Channels</h2><p>Send moderation actions and general server activity to different channels.</p></div></div><div class="logging-destination-grid"><label><span>Moderation Logs</span><small>Bans, kicks, timeouts, warnings, purges, and staff actions</small><select id="logging-moderation-channel"></select><button id="test-moderation-log" class="secondary-button compact-button" type="button">Send test log</button></label><label><span>Server Logs</span><small>Messages, members, roles, channels, voice, and server changes</small><select id="logging-server-channel"></select><button id="test-server-log" class="secondary-button compact-button" type="button">Send test log</button></label></div></article>
+          <article class="card logging-events-card"><div class="card-head"><div><p class="eyebrow">EVENT CATEGORIES</p><h2>Recorded Events</h2></div><p id="logging-enabled-count" class="logging-total">0 events enabled</p></div><div class="logging-toolbar"><input id="logging-search" class="search-input" type="search" placeholder="Search events…"><div class="event-global-actions"><button id="logging-all" class="secondary-button">Enable All</button><button id="logging-none" class="secondary-button">Disable All</button></div></div><div id="logging-events" class="logging-groups"></div></article>
+          <div id="logging-save-bar" class="logging-save-bar"><span><b>● Unsaved changes</b><small id="logging-bar-count">0 events enabled</small></span><button id="logging-discard" class="secondary-button">Discard</button><button id="save-logging">✓ Save Changes</button></div>
+        </section>
+
+        <section class="page" data-panel="faith">
+          <article class="card faith-intro"><p class="eyebrow">FAITH</p><h2>A verse to begin the day</h2><p>A daily Bible verse for your community. Read, reflect, and continue the conversation in Bible-Talk.</p><p id="faith-scope">Each server has its own settings.</p></article>
+          <div id="faith-controls" hidden>
+            <p id="faith-status" role="status" aria-live="polite">Loading Faith settings…</p>
+            <div class="faith-grid">
+              <form id="faith-form" class="card">
+                <h2>Daily Bible</h2>
+                <fieldset id="faith-fields" disabled>
+                  <label class="faith-toggle"><input id="faith-enabled" type="checkbox"> Enable daily posts</label>
+                  <label for="faith-channel">Daily verse channel</label><select id="faith-channel"></select>
+                  <label for="faith-discussion">Discussion channel (optional)</label><select id="faith-discussion"></select>
+                  <div class="faith-schedule"><div><label for="faith-time">Posting time</label><input id="faith-time" type="time" required value="09:00"></div><div><label for="faith-timezone">Timezone</label><input id="faith-timezone" type="text" required maxlength="80" value="Asia/Jerusalem" list="faith-timezones"><datalist id="faith-timezones"><option value="Asia/Jerusalem"><option value="Europe/London"><option value="America/New_York"><option value="UTC"></datalist></div></div>
+                  <label for="faith-translation">Translation</label><select id="faith-translation"><option value="WEB">English · World English Bible</option></select>
+                  <p class="muted">One post each day. No automatic pings. After downtime, only today’s missed verse is posted.</p>
+                  <div class="faith-actions"><button type="submit">Save settings</button><button id="faith-refresh" type="button" class="secondary-button">Refresh status</button></div>
+                </fieldset>
+              </form>
+              <article class="card faith-preview"><p class="eyebrow">TODAY’S PREVIEW</p><h2>Bible Verse of the Day</h2><blockquote id="faith-verse"></blockquote><p><strong id="faith-reference"></strong></p><a id="faith-source" target="_blank" rel="noopener noreferrer">Read the chapter · World English Bible</a><p id="faith-preview-date" class="muted"></p><p class="muted">Preview uses the saved timezone. Save changes to update it.</p></article>
+            </div>
+            <article class="card faith-history"><h2>Delivery status</h2><p id="faith-delivery-error" role="status"></p><ul id="faith-history"></ul></article>
+            <article class="card faith-guide"><h2>Your Faith channels</h2><dl><dt>My-Faith</dt><dd>Share your beliefs or faith journey if you want to.</dd><dt>Religious-Talk / Talk-for-Religion</dt><dd>Respectful questions, text discussion and voice conversation.</dd><dt>Bible-Talk / Quran-Talk</dt><dd>Discuss the respective texts. Bible-Talk is the place for daily verse discussion.</dd><dt>daily-bible</dt><dd>Read and react to the daily verse.</dd></dl><p>Respect people of every belief, including no belief. No harassment, slurs, or pressure to convert.</p><p><code>/bible today</code> · <code>/bible status</code> · <code>/bible guide</code><br>Administrators: <code>/bible setup</code> · <code>/bible disable</code></p><p id="faith-collection" class="muted"></p></article>
+          </div>
+        </section>
+        <section class="page" data-panel="youtube">
+          <div id="youtube-control" class="youtube-control">
+            <article id="youtube-hero" class="card youtube-hero">
+              <div class="youtube-brand"><span class="youtube-logo">▶</span><div><p class="eyebrow">AUTOMATION</p><h2>YouTube Alerts</h2><p>Follow one YouTube creator in this server. Each server has its own settings.</p></div></div>
+              <div class="youtube-toggle"><span id="youtube-state-pill" class="youtube-state-pill"><i></i><b id="youtube-state-label">Disabled</b></span><label class="switch"><input id="youtube-enabled" type="checkbox" aria-label="Enable YouTube alerts"><span></span></label></div>
+              <div class="youtube-summary"><div><span>Creator</span><strong id="youtube-creator">Not configured</strong></div><div><span>Destination</span><strong id="youtube-destination">Not configured</strong></div><div><span>Duplicate Protection</span><strong class="positive">Enabled</strong></div></div>
+            </article>
+
+            <div class="youtube-main-grid">
+              <article class="card youtube-config">
+                <div class="card-head"><div><p class="eyebrow">ALERT SETTINGS</p><h2>Alert Configuration</h2><p>Choose where new upload notifications are sent.</p></div></div>
+                <div id="youtube-source-controls" hidden><label class="field-label" for="youtube-source">YouTube channel</label><input id="youtube-source" type="text" maxlength="512" placeholder="@creator or YouTube channel URL" aria-describedby="youtube-source-help"><p id="youtube-source-help">One creator per server. Changing creators starts a fresh alert history without posting old uploads.</p></div><p id="youtube-rollout-note">New creator controls are being tested in Beta first.</p>
+                <label class="field-label" for="youtube-channel">Discord destination channel</label>
+                <div class="channel-select"><span>#</span><select id="youtube-channel"></select></div>
+                <label class="youtube-mention-choice" hidden><input id="youtube-mention-everyone" type="checkbox"> Mention everyone for upload alerts</label>
+                <div class="youtube-actions"><button id="save-youtube"><span>✓</span> Save Changes</button><button id="test-youtube" class="secondary-button" type="button"><span>▶</span> Send Test Notification</button><button id="check-youtube" class="secondary-button" type="button"><span>↻</span> Check Feed Now</button><button id="retry-youtube" class="secondary-button" type="button">Retry Failed</button></div>
+                <div class="duplicate-row"><span class="shield-mark">✓</span><div><strong>Duplicate Protection</strong><p>Prevents DexzuBot from posting the same upload more than once.</p></div><b>Enabled</b></div>
+              </article>
+
+              <article class="card youtube-preview-card">
+                <div class="card-head"><div><p class="eyebrow">DISCORD MESSAGE</p><h2>Notification Preview</h2></div><span class="preview-badge">Preview</span></div>
+                <div class="discord-preview"><div class="preview-author"><img id="youtube-preview-avatar" alt="DexzuBot"><div><strong>DexzuBot <span>BOT</span></strong><small>Just now</small></div></div><div class="preview-embed"><b>● New YouTube Upload</b><p id="youtube-preview-copy">Your creator’s next upload will appear here.</p><div id="youtube-preview-media" class="preview-media"><span>▶</span></div><strong id="youtube-preview-title">Loading latest upload…</strong><small>Watch the latest upload.</small><em>YouTube • Preview</em><a id="youtube-preview-link" class="video-link" target="_blank" rel="noopener">Watch on YouTube</a></div></div>
+              </article>
+            </div>
+
+            <div class="youtube-bottom-grid">
+              <article class="card latest-card"><div class="card-head"><div><p class="eyebrow">LATEST UPLOAD</p><h2>Latest Upload</h2></div><a id="youtube-latest-link" class="text-link" target="_blank" rel="noopener">Open video ↗</a></div><div id="youtube-latest" class="youtube-empty"><span>▶</span><strong>Loading upload information…</strong></div></article>
+              <article class="card recent-youtube-card"><div class="card-head"><div><p class="eyebrow">HISTORY</p><h2>Recent Notifications</h2><p>Recently detected YouTube uploads.</p></div></div><div id="youtube-notifications" class="youtube-empty compact"><span>≡</span><strong>No notifications yet</strong><p>New upload notifications for this server will appear here.</p></div></article>
+              <article class="card youtube-service-card"><div class="card-head"><div><p class="eyebrow">SERVICE</p><h2>Alert Status</h2></div></div><div id="youtube-service-status" class="system-status"></div></article>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" data-panel="operations">
+          <article id="dashboard-access" class="card dashboard-access" hidden aria-labelledby="dashboard-access-heading">
+            <div class="card-head"><div><p class="eyebrow">OWNER ACCESS</p><h2 id="dashboard-access-heading">Dashboard invitations</h2><p>Invite a specific Discord account to this dashboard. The recipient must join the selected server.</p></div><button id="dashboard-access-refresh" type="button" class="secondary-button">Refresh access</button></div>
+            <p id="dashboard-access-help">Viewers can read private dashboard records. Managers can change server settings and must have Administrator in that Discord server. Dashboard access does not grant Discord permissions.</p>
+            <form id="dashboard-invite-form" aria-describedby="dashboard-access-help">
+              <fieldset id="dashboard-invite-fields"><legend>Create an invitation</legend><div class="dashboard-invite-grid">
+                <label for="dashboard-invite-user">Recipient Discord ID<input id="dashboard-invite-user" required pattern="[0-9]{17,20}" inputmode="numeric" autocomplete="off" placeholder="17–20 digit account ID"></label>
+                <label for="dashboard-invite-workspace">Workspace<select id="dashboard-invite-workspace"><option value="">Loading servers…</option></select></label>
+                <label for="dashboard-invite-role">Access<select id="dashboard-invite-role"><option value="viewer">Viewer — read only</option><option value="manager">Manager — Administrator required</option></select></label>
+                <label for="dashboard-invite-hours">Link expires in<select id="dashboard-invite-hours"><option value="1">1 hour</option><option value="24" selected>24 hours</option><option value="168">7 days</option></select></label>
+              </div><button type="submit">Create invitation</button></fieldset>
+            </form>
+            <div id="dashboard-invite-result" class="dashboard-invite-result" hidden><label for="dashboard-invite-link">One-use invitation link</label><input id="dashboard-invite-link" readonly autocomplete="off" spellcheck="false"><div class="dashboard-access-actions"><button id="dashboard-invite-copy" type="button">Copy link</button><button id="dashboard-invite-clear" class="secondary-button" type="button">Clear link</button></div><p>Send this link to the recipient. It can only be redeemed by their Discord account. The expiry applies to the link; accepted access stays active until revoked.</p></div>
+            <p id="dashboard-access-status" role="status" aria-live="polite"></p>
+            <div class="dashboard-access-lists"><section aria-labelledby="dashboard-grants-heading"><h3 id="dashboard-grants-heading">Active access</h3><ul id="dashboard-grants-list"></ul></section><section aria-labelledby="dashboard-invites-heading"><h3 id="dashboard-invites-heading">Pending invitations</h3><ul id="dashboard-invites-list"></ul></section></div>
+          </article>
+          <div class="feature-heading"><div><p class="eyebrow">RELIABILITY CENTER</p><h2>Operations</h2><p>Health checks, access roles, backups, and active timed punishments.</p></div><button id="run-health-check" class="secondary-button">Run health check</button></div>
+          <div id="operations-summary" class="summary-grid four"></div>
+          <article id="food-collection-controls" class="card" hidden>
+            <p class="eyebrow">FUN · BETA</p><h2>Food collection</h2><p>Turn mystery meals into a collection. New discoveries get a badge; duplicates increase the eaten count.</p>
+            <form id="food-settings-form"><fieldset id="food-settings-fields" disabled>
+              <label class="food-toggle"><input id="food-enabled" type="checkbox"> Enable /eat meals</label>
+              <label for="food-cooldown">Cooldown in seconds</label><input id="food-cooldown" type="number" min="5" max="3600" step="1" required value="30" aria-describedby="food-cooldown-help">
+              <p id="food-cooldown-help">Default: 30 seconds. Pausing meals keeps every collection saved and viewable.</p>
+              <button type="submit">Save food settings</button>
+            </fieldset></form>
+            <p id="food-settings-status" role="status" aria-live="polite">Loading food settings…</p>
+            <div id="food-rarities" class="food-rarities" aria-label="Food rarity odds"></div>
+            <details><summary>Food command guide</summary><p><code>/eat</code> gives you a random food and reaction. Use <code>/eat action:collection</code> or the <strong>My collection</strong> button to view your own discoveries privately.</p><p><code>/eat action:guide</code> shows the rules. Progress and cooldowns survive restarts. No coins are spent.</p></details>
+          </article>
+          <!-- Add stylesheet in head: /dashboard/community-beta.css; script after app.js: /dashboard/community-beta.js -->
+<section id="beta-community-controls" hidden aria-labelledby="community-heading">
+  <div class="card-head"><div><h2 id="community-heading">Community tools</h2><p>Configure panels and staff workflows for the selected server.</p></div><button type="button" id="community-refresh">Refresh</button></div>
+  <p id="community-status" role="status" aria-live="polite">Loading community settings...</p>
+  <div id="community-forms" class="community-grid"></div>
+  <article class="card community-review"><h3>Staff requests and activity</h3><p>Review submitted applications and leave requests. Activity checks use the saved staff role and exclude approved leave.</p><div id="community-staff"></div></article>
+  <details class="card community-guide"><summary>Community command guide</summary><dl>
+    <dt>/invite-rewards balance · /invite-rewards claim · /invite-rewards panel</dt><dd>Check qualifying invites, claim new milestones or publish a panel. Publishing requires Manage Server.</dd>
+    <dt>/staff applications · /staff leave · /staff activity</dt><dd>Open the application, leave or current activity controls privately in Discord.</dd>
+    <dt>/staff activity-start hours · /staff activity-end id</dt><dd>Reviewers can start a check for 1–336 hours or close it by its check ID.</dd>
+    <dt>Invite rewards</dt><dd>Publish the invite rewards panel, then use its balance and claim buttons. Only attributed, retained members qualify; each milestone can be claimed once.</dd>
+    <dt>Applications</dt><dd>Use the application panel to start, resume or cancel a private application. Answer one question at a time. Review submitted answers here.</dd>
+    <dt>Leave of absence</dt><dd>Use the leave panel to request 1–14 days away. Reviewers approve or deny requests here; approved leave expires automatically.</dd>
+    <dt>Activity checks</dt><dd>Start a check below, then staff respond using its Discord button. Close a check to see responded, missing and excluded members. No reminder DMs are sent.</dd>
+    <dt>Tickets and server information</dt><dd>Category buttons open General support, Report a member or Partnership tickets using the existing ticket setup. Server information panels include current statistics and selected channel links.</dd>
+    <dt>Optional DMs</dt><dd>DM switches apply only to the involved member’s application, ticket or leave updates. Delivery can fail when DMs are closed; the saved result remains visible here.</dd>
+  </dl></details>
+</section>
+
+          <article id="beta-embed-motion" class="card" hidden aria-labelledby="embed-motion-heading">
+            <div class="card-head"><div><p class="eyebrow">DEXZUBOT / MESSAGE DESIGN</p><h2 id="embed-motion-heading">Animated messages</h2></div></div>
+            <p>Moving Dexzu artwork for command replies, support, verification, role panels, and giveaways. Text and buttons stay still.</p>
+            <div class="embed-motion-preview"><img id="embed-motion-avatar" width="72" height="72" alt="DexzuBot artwork"><div><strong>DexzuBot</strong><p>A little movement, the same dungeon.</p></div></div>
+            <img id="embed-motion-banner" class="embed-motion-banner" width="720" height="166" alt="Compact DexzuBot giveaway banner">
+            <form id="embed-motion-form"><fieldset disabled><label><input id="embed-motion-enabled" type="checkbox"> Animate message artwork and emojis</label><button type="submit">Save message design</button></fieldset></form>
+            <p id="embed-motion-status" role="status" aria-live="polite">Loading message design…</p>
+            <details><summary>How to try it</summary><p>Run /ping or /role list in the beta server. New replies use the saved design. Saving also updates configured support, verification, reaction-role, and giveaway panels. Previous command replies keep their original artwork.</p><p>Discord controls GIF playback. Reduced-motion mode pauses this preview. No new command is needed.</p></details>
+          </article>
+          <section id="beta-role-controls" hidden aria-labelledby="role-controls-heading">
+            <div class="feature-heading"><div><p class="eyebrow">BETA / SERVER ROLES</p><h2 id="role-controls-heading">Role management</h2><p>Manage roles here or use /role in Discord. Bulk changes and deletion need confirmation.</p></div><button id="refresh-roles" type="button" class="secondary-button">Refresh roles</button></div>
+            <p id="role-status" role="status" aria-live="polite">Loading server roles…</p>
+            <div class="beta-role-grid">
+              <article class="card"><h3>Autorole</h3><p>Give one role to new members when they join.</p><form id="role-autorole-form"><fieldset disabled><label for="role-autorole">New member role</label><select id="role-autorole"></select><p id="role-autorole-help">Choose a role or turn autorole off.</p><button type="submit">Save autorole</button></fieldset></form></article>
+              <article class="card"><h3>Member roles</h3><p>Add or remove one role for one member.</p><form id="role-member-form"><fieldset disabled><label for="role-member-id">Member ID or mention</label><input id="role-member-id" required pattern="(?:&lt;@!?)?[0-9]{17,20}&gt;?" placeholder="Paste a member ID or @mention" autocomplete="off"><label for="role-member-selected">Role</label><select id="role-member-selected" required></select><label for="role-member-action">Action</label><select id="role-member-action"><option value="add">Add role</option><option value="remove">Remove role</option></select><button type="submit">Apply to member</button></fieldset></form></article>
+              <article class="card"><h3>Create a role</h3><p>New roles start with no server permissions.</p><form id="role-create-form"><fieldset disabled><label for="role-create-name">Name</label><input id="role-create-name" required maxlength="100" placeholder="Beta Tester"><label for="role-create-color">Color</label><input id="role-create-color" value="#67D5FF" pattern="#?[0-9a-fA-F]{6}" required maxlength="7"><button type="submit">Create role</button></fieldset></form></article>
+              <article class="card"><h3>Browse and edit roles</h3><label for="role-edit-selected">Server role</label><select id="role-edit-selected"></select><p id="role-detail-summary"></p><details><summary>Role permissions</summary><p id="role-permissions"></p></details><form id="role-edit-form"><fieldset disabled><label for="role-edit-name">Name</label><input id="role-edit-name" required maxlength="100"><label for="role-edit-color">Color</label><input id="role-edit-color" required maxlength="7" pattern="#?[0-9a-fA-F]{6}"><label class="check-row"><input id="role-edit-hoist" type="checkbox"><span>Display separately in the member list</span></label><label class="check-row"><input id="role-edit-mentionable" type="checkbox"><span>Allow everyone to mention this role</span></label><div class="role-actions"><button type="submit">Save role</button><button id="role-delete" type="button" class="secondary-button role-danger">Preview deletion</button></div></fieldset></form></article>
+              <article class="card"><h3>Bulk role changes</h3><p>Preview up to 100 eligible members. Members above DexzuBot, the server owner, and DexzuBot itself are skipped.</p><form id="role-bulk-form"><fieldset disabled><label for="role-bulk-selected">Role to change</label><select id="role-bulk-selected" required></select><label for="role-bulk-action">Action</label><select id="role-bulk-action"><option value="bulk-add">Add role</option><option value="bulk-remove">Remove role</option></select><label for="role-bulk-audience">Audience</label><select id="role-bulk-audience"><option value="humans">Humans</option><option value="bots">Bots</option><option value="all">Everyone</option></select><label for="role-bulk-source">Only members with this role (optional)</label><select id="role-bulk-source"></select><button type="submit">Preview bulk change</button></fieldset></form></article>
+              <article class="card role-guide"><p class="eyebrow">QUICK GUIDE</p><h3>Prefer Discord?</h3><dl><dt>/role add · remove</dt><dd>Change a member's role.</dd><dt>/role create · edit · delete</dt><dd>Manage a role's name, color, and display settings.</dd><dt>/role info · list</dt><dd>Check roles and their permissions.</dd><dt>/role bulk-add · bulk-remove</dt><dd>Choose an audience and preview the change.</dd><dt>/role confirm · cancel</dt><dd>Apply or discard your pending preview.</dd><dt>/autorole add · remove · list</dt><dd>Set the role given to new members.</dd></dl><p>Discord commands require Manage Roles. Autorole also needs Manage Server. Prefix commands work with the server's configured prefix.</p><p>This private dashboard uses DexzuBot's permissions. Changes are recorded as dashboard actions.</p></article>
+            </div>
+          </section>
+          <article class="card prefix-settings-card">
+            <div class="card-head"><div><p class="eyebrow">TEXT COMMANDS</p><h2>Prefix Commands</h2><p>Shared with the Discord /prefix dashboard. Slash commands and staff permissions are unchanged.</p></div></div>
+            <form id="prefix-settings-form">
+              <fieldset id="prefix-settings-fields">
+                <label class="check-row"><input id="prefix-enabled" type="checkbox"><span>Enable prefix commands</span></label>
+                <label class="field-label" for="command-prefix">Command prefix</label>
+                <input id="command-prefix" type="text" required minlength="1" maxlength="10" autocomplete="off" spellcheck="false" aria-describedby="prefix-help-text">
+                <p id="prefix-help-text">Use 1–10 characters without spaces or quotes. Open help with !help and settings with !config (using your chosen prefix).</p>
+                <div class="prefix-access-grid">
+                  <div><h3>Allowed channels</h3><p>Select up to 25. None selected means all text channels.</p><div id="prefix-channel-list" class="check-list"></div></div>
+                  <div><h3>Allowed roles</h3><p>Select up to 25. None selected means everyone. This does not grant staff access.</p><div id="prefix-role-list" class="check-list"></div></div>
+                </div>
+                <div class="card-actions"><span>Authorized staff can always reopen the settings panel.</span><button id="save-prefix-settings" type="submit">Save prefix settings</button></div>
+              </fieldset>
+            </form>
+          </article>
+          <div class="operations-grid">
+            <article class="card operations-card"><div class="card-head"><div><p class="eyebrow">PERMISSIONS & HEALTH</p><h2>Live Diagnostics</h2><p>DexzuBot checks required Discord and database access every five minutes.</p></div></div><div id="operations-health" class="operations-list"></div></article>
+            <article class="card operations-card"><div class="card-head"><div><p class="eyebrow">COMMAND ACCESS</p><h2>Staff Roles</h2><p>Members with any selected role can use staff-only commands.</p></div></div><div id="access-role-list" class="operations-list scroll-list"></div><div class="card-actions"><span id="access-role-count">0 roles selected</span><button id="save-access-roles">✓ Save Roles</button></div></article>
+            <article class="card operations-card"><div class="card-head"><div><p class="eyebrow">TIMED PUNISHMENTS</p><h2>Active Softbans</h2><p>Review schedules restored automatically after a restart.</p></div></div><div id="timed-softbans" class="operations-list"></div></article>
+            <article class="card operations-card"><div class="card-head"><div><p class="eyebrow">BACKUP & RECOVERY</p><h2>Configuration Snapshots</h2><p>Store a server configuration checkpoint or download a portable copy.</p></div></div><div id="config-snapshots" class="operations-list"></div><div class="card-actions"><a class="secondary-button button-link" id="config-export" href="/dashboard/api/operations/export" download>Download config</a><button id="create-snapshot">Create snapshot</button></div></article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <dialog id="control-search-dialog" aria-labelledby="search-title">
+    <div class="search-dialog-heading"><h2 id="search-title">Find a control</h2><button id="close-control-search" type="button" aria-label="Close search">×</button></div>
+    <label class="sr-only" for="control-search-input">Search dashboard sections</label><input id="control-search-input" type="search" placeholder="Search tickets, safety, leveling…" autocomplete="off">
+    <div id="control-search-results" aria-live="polite"></div><p class="search-hint">Use Tab to choose a result · Escape to close</p>
+  </dialog>
+  <div id="toasts" class="toast-stack" aria-live="polite"></div>
+  <link rel="stylesheet" href="/dashboard/motion.css">
+  <link id="halloween-theme" rel="stylesheet" href="/dashboard/halloween.css" media="all">
+  <link rel="stylesheet" href="/dashboard/halloween-redesign.css?v=1">
+  <dialog id="role-preview-dialog" aria-labelledby="role-preview-heading" aria-describedby="role-preview-copy">
+    <h2 id="role-preview-heading">Review role changes</h2><p id="role-preview-copy"></p><p id="role-preview-expiry"></p>
+    <p>No changes have been applied. A new dashboard preview replaces the previous one.</p>
+    <div class="role-actions"><button id="role-confirm" type="button">Confirm changes</button><button id="role-cancel" type="button" class="secondary-button">Cancel</button></div>
+  </dialog>
+  <script src="/dashboard/motion.js" defer></script>
+  <script src="/dashboard/dashboard-context.js" defer></script>
+  <script src="/dashboard/dashboard-access.js" defer></script>
+  <script src="/dashboard/app.js" defer></script>
+  <script src="/dashboard/prefix-settings.js" defer></script>
+  <script src="/dashboard/beta-roles.js" defer></script>
+  <script src="/dashboard/embed-motion.js" defer></script>
+  <script src="/dashboard/community-beta.js" defer></script>
+  <script src="/dashboard/faith.js" defer></script>
+  <script src="/dashboard/food-collection.js" defer></script>
+  <script src="/dashboard/community-releases.js" defer></script>
+  <script src="/dashboard/workspace.js" defer></script>
+  <script src="/dashboard/control-center.js" defer></script>
+</body>
+</html>

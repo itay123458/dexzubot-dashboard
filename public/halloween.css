@@ -1,0 +1,99 @@
+﻿/* Seasonal styling is loaded after feature styles. Status colors keep their meaning. */
+:root {
+  --bg: #141019; --surface: #211827; --surface-2: #2b2033;
+  --text: #f8f3ed; --muted: #c5b6cb; --line: #493651;
+  --blue: #ff9f43; --cyan: #b58aff;
+  --green: #8ac6a0; --danger: #ff9cae;
+  --halloween-orange: #ff9f43; --halloween-purple: #b58aff;
+}
+body { background: var(--bg); }
+body::before {
+  background: radial-gradient(ellipse at 85% 0%,#62336c30,transparent 55%),
+    radial-gradient(ellipse at 20% 25%,#a64d1619,transparent 45%),
+    linear-gradient(#141019e8,#141019 600px),url('/dashboard/dexzu-dungeon-bg.jpg') center top/cover no-repeat;
+}
+.sidebar { background: #1b1420; border-right-color: var(--line); }
+.brand { border-bottom-color: var(--line); }
+.brand img,.server-chip img { border-color: #9c653e; }
+.brand span,.eyebrow,.breadcrumb b { color: var(--halloween-orange); }
+.season-label { display:flex; align-items:center; gap:8px; margin:16px 8px 0; color:var(--halloween-orange); font-size:12px; font-weight:650; }
+.season-label svg { flex:none; }
+.nav-label,.sidebar-footer small,.breadcrumb,.metric small { color: var(--muted); }
+.nav-item { color: var(--muted); }
+.nav-item:hover { background:#33233c; color:var(--text); }
+.nav-item.active { color:#ffe2c4; background:#3b281f; border-color:#785033; }
+.nav-item.active::before { background:var(--halloween-orange); box-shadow:none; }
+.nav-icon { color:var(--halloween-purple); background:#b58aff12; }
+.nav-item.active .nav-icon { color:var(--halloween-orange); }
+.card,.metric,.status-card,.control-card,.performance-card { background:var(--surface); border-color:var(--line); }
+.card h2,.card h3,.card strong,.metric strong { color:var(--text); }
+.card p,.card small { color:var(--muted); }
+.server-chip { background:var(--surface); border-color:var(--line); }
+.workspace-switch { background:#1b1420; border-color:var(--line); }
+.workspace-switch a { color:var(--muted); }
+.workspace-switch a[aria-current="page"] { color:var(--halloween-orange); background:#3b281f; }
+.server-select-label { color:var(--muted); }
+button:not(.nav-item):not(.secondary-button):not(.icon-button):not(.collapse-button):not(.toast-close):not(.control-search-result) {
+  background:var(--halloween-orange); color:#241407; border-color:#ffb36c;
+}
+button.secondary-button,button.icon-button,.collapse-button {
+  color:var(--text); background:#2b2033; border-color:var(--line);
+}
+button:hover:not(:disabled) { filter:brightness(1.08); }
+button:disabled { opacity:.55; cursor:not-allowed; }
+input:not([type="checkbox"]):not([type="radio"]),select,textarea {
+  color:var(--text); background:#19131f; border-color:var(--line);
+}
+input::placeholder,textarea::placeholder { color:#b4a3bd; }
+input:hover,select:hover,textarea:hover { background:#2b2033; }
+input[type="checkbox"],input[type="radio"] { accent-color:var(--halloween-orange); }
+:where(button,a,input,select,textarea):focus-visible {
+  outline:2px solid var(--halloween-orange); outline-offset:3px;
+  box-shadow:0 0 0 4px #141019;
+}
+.switch input:checked + span { background:var(--halloween-orange); border-color:var(--halloween-orange); }
+.switch input:focus-visible + span { outline:2px solid var(--halloween-orange); outline-offset:3px; }
+a,.text-link { color:var(--halloween-purple); }
+.youtube-hero { background:linear-gradient(115deg,#35211e,#211827 75%); border-color:#6c493c; }
+.youtube-logo { color:var(--halloween-orange); background:#ff9f4312; }
+.youtube-summary,.youtube-summary > div,.youtube-config,.youtube-preview-card { border-color:var(--line); }
+.youtube-summary strong,.youtube-preview-card strong { color:var(--text); }
+.discord-preview,.preview-embed { background:#1a141f; }
+.preview-embed { border-left-color:var(--halloween-orange); }
+.youtube-mention-choice { color:var(--muted); }
+#youtube-source-help { color:var(--muted); }
+.workspace-notice { color:#e2cdff; border-color:#76559e; background:#2b203b; }
+.toast,.control-search-dialog,dialog { background:var(--surface); color:var(--text); border-color:var(--line); }
+.positive,.status-value.good { color:var(--green); }
+.negative,.status-value.bad { color:var(--danger); }
+@media(max-width:700px) {
+  .season-label { display:none; }
+  .server-select-label { max-width:150px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .brand-avatar::before { animation:none; }
+  body::before { background-attachment:scroll; }
+}
+/* Match existing command-center selectors so the seasonal layer wins consistently. */
+body .sidebar.control-header { background:#1b1420ed; border-color:var(--line); }
+body .brand .halloween-brand { color:var(--halloween-orange); display:flex; align-items:center; gap:5px; }
+body button.control-search { color:var(--muted); background:#2b2033; border-color:var(--line); }
+body button:not(.nav-item):not(.secondary-button):not(.icon-button):not(.danger-button):not(.danger-secondary):not(.control-search):not(.mobile-navigation):not(.toast-close) {
+  background:var(--halloween-orange); color:#241407; border-color:#ffb36c;
+}
+body .secondary-button,body .icon-button,body .collapse-button {
+  color:var(--text)!important; background:#2b2033!important; border-color:var(--line)!important;
+}
+body .secondary-button:hover:not(:disabled),body .icon-button:hover:not(:disabled) { background:#3a2a46!important; }
+body .dashboard-nav { background:#211827ed; border-color:#6a4d75; }
+body .dashboard-nav .nav-item { background:#302339; border-color:#50385d; color:var(--halloween-purple); }
+body .dashboard-nav .nav-item.active { background:#513022; border-color:var(--halloween-orange); color:var(--halloween-orange); box-shadow:none; }
+body .dashboard-nav .nav-item:hover { background:#44304d; border-color:var(--halloween-purple); }
+body .nav-icon { color:inherit; }
+body .card .eyebrow,body .youtube-brand .eyebrow { color:var(--halloween-orange); }
+body .youtube-summary span,body .field-label { color:var(--muted); }
+body select,body .channel-select select { background:#19131f; border-color:var(--line); color:var(--text); }
+body .preview-media { background:#261c30; }
+body .topbar { gap:24px; }
+body .server-control { gap:10px; }
+@media(max-width:600px) { body .brand .halloween-brand { font-size:8px; } }

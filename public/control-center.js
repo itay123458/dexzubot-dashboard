@@ -1,0 +1,85 @@
+// Presentation and navigation only; all writes stay in the existing controls.
+(() => {
+  document.querySelectorAll('[data-open-page]').forEach(button => button.addEventListener('click', () => {
+    document.querySelector(`#dashboard-navigation [data-page="${button.dataset.openPage}"]`)?.click();
+  }));
+  $('overview-modules-link').addEventListener('click', () => {
+    const heading = $('command-modules-heading');
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView({ block: 'start', behavior: 'instant' });
+  });
+  const dialog = $('control-search-dialog');
+  const input = $('control-search-input');
+  const results = $('control-search-results');
+  const destinations = [...document.querySelectorAll('#dashboard-navigation [data-page]')];
+
+  function renderResults() {
+    const query = input.value.trim().toLowerCase();
+    const matches = destinations.filter(button => {
+      if (button.hidden) return false;
+      const details = pageDetails[button.dataset.page];
+      return `${button.title} ${details?.join(' ')}`.toLowerCase().includes(query);
+    });
+    results.replaceChildren();
+    for (const destination of matches) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const label = document.createElement('strong');
+      label.textContent = destination.title;
+      const description = document.createElement('span');
+      description.textContent = pageDetails[destination.dataset.page][1];
+      button.append(label, description);
+      button.addEventListener('click', () => {
+        const closing = window.DexzuMotion.closeDialog(dialog);
+        destination.click();
+        void closing.then(closed => { if (closed) $('dashboard-main').focus({ preventScroll: true }); });
+      });
+      results.append(button);
+    }
+    if (!matches.length) {
+      const empty = document.createElement('p');
+      empty.className = 'search-empty';
+      empty.textContent = 'No matching controls. Try “tickets”, “safety”, or “leveling”.';
+      results.append(empty);
+    }
+  }
+
+  function openSearch() {
+    window.DexzuMotion.cancelDialogClose(dialog);
+    if (dialog.open) { input.focus(); return; }
+    input.value = '';
+    renderResults();
+    dialog.showModal();
+    input.focus();
+  }
+  $('open-control-search').addEventListener('click', openSearch);
+  $('close-control-search').addEventListener('click', () => { void window.DexzuMotion.closeDialog(dialog); });
+  input.addEventListener('input', renderResults);
+  input.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown') { event.preventDefault(); results.querySelector('button')?.focus(); }
+    if (event.key === 'Enter') { event.preventDefault(); results.querySelector('button')?.click(); }
+  });
+  document.addEventListener('keydown', event => {
+    // Search inputs consume Escape to clear their text in Chromium.
+    if (event.key === 'Escape' && dialog.open) {
+      event.preventDefault(); void window.DexzuMotion.closeDialog(dialog); return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault(); openSearch();
+    }
+  });
+  dialog.addEventListener('cancel', event => { event.preventDefault(); void window.DexzuMotion.closeDialog(dialog); });
+  dialog.addEventListener('click', event => { if (event.target === dialog) void window.DexzuMotion.closeDialog(dialog); });
+  window.addEventListener('dexzu-state', event => {
+    const { bot } = event.detail;
+    $('hero-bot-avatar').src = bot.avatar;
+    $('hero-connection').textContent = bot.online
+      ? (bot.latencyMs == null ? 'Connected to your community' : `Connected with ${bot.latencyMs} ms latency`)
+      : 'Disconnected from Discord';
+    $('hero-uptime').textContent = `${Math.floor(bot.uptimeSeconds / 3600)}h ${Math.floor(bot.uptimeSeconds % 3600 / 60)}m`;
+    $('hero-memory').textContent = bot.memoryMb == null ? '—' : `${bot.memoryMb} MB`;
+    $('hero-api').textContent = bot.online ? 'Connected' : 'Offline';
+    $('hero-api').classList.toggle('connected', bot.online);
+    $('hero-api').classList.toggle('disconnected', !bot.online);
+  });
+})();

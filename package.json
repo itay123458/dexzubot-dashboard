@@ -1,0 +1,13 @@
+{
+  "name": "dexzubot-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DexzuBot dashboard frontend. Authenticated runtime hosted on the Raspberry Pi.",
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs"
+  }
+}
