@@ -12,4 +12,4 @@ This public repository is the source of truth for the dashboard frontend in
 - Run `npm run check`, then run the backend repository's dashboard browser and auth
   regressions against a synthetic fixture before deploying an updated snapshot.
 - Import a committed, clean release into the bot using `scripts/import-dashboard.mjs`.
-  See README.md. Do not edit the bot's vendored snapshot independently.
+  Do not edit the bot's vendored snapshot independently.
