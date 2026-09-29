@@ -1,11 +1,11 @@
 # DexzuBot dashboard
 
-This private repository is the source of truth for the dashboard frontend in
-`public/`. The authenticated website runs on the Raspberry Pi, not GitHub Pages.
+This public repository is the source of truth for the dashboard frontend in
+`public/`. GitHub Pages serves the public website; the Raspberry Pi authorizes data and bot controls.
 
 - Product name: DexzuBot. Beta-badged artwork belongs in Beta only.
 - Halloween dashboard styling is approved for all servers (2026-09-29).
-- Preserve existing element IDs, same-origin API paths, server context, dirty-form
+- Preserve existing element IDs, API paths (the Pages transport maps them to the authenticated Pi), server context, dirty-form
   safeguards and keyboard/reduced-motion behavior.
 - Never add bot tokens, OAuth secrets, database credentials or server exports.
 - Login, invitations, permissions and APIs belong to the private DexzuBot backend.

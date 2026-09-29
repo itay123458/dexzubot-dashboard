@@ -7,7 +7,7 @@
   let session;
   let readOnly = false;
   let accessRequest = 0;
-  const readControls = '[data-page], [data-workspace], #server-selector, #mobile-navigation, #open-control-search, #control-search-dialog *, #refresh-dashboard, #view-logs, #refresh-roles, #community-refresh, #role-edit-selected, #dashboard-logout, input[type="search"], .toast-close';
+  const readControls = '#pages-signin *, [data-page], [data-workspace], #server-selector, #mobile-navigation, #open-control-search, #control-search-dialog *, #refresh-dashboard, #view-logs, #refresh-roles, #community-refresh, #role-edit-selected, #dashboard-logout, input[type="search"], .toast-close';
 
   async function request(path, body) {
     const response = await fetch(`/dashboard/auth/${path}`, {
@@ -15,7 +15,7 @@
       ...(body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
     });
     if (response.status === 401) {
-      location.assign('/dashboard/auth/login');
+      window.dashboardSignedOut();
       throw new Error('Your session ended. Sign in again.');
     }
     const result = await response.json();
@@ -126,8 +126,11 @@
   });
   element('dashboard-logout').addEventListener('click', async event => {
     event.currentTarget.disabled = true; sessionStatus.textContent = 'Logging out…';
-    try { await request('logout', {}); clearLink(); location.assign('/dashboard/auth/login'); }
-    catch (error) { sessionStatus.textContent = error.message; element('dashboard-logout').disabled = false; }
+    try { await request('logout', {}); clearLink(); window.dashboardSignedOut(); }
+    catch (error) {
+      if (window.DexzuPagesConfig) { clearLink(); window.dashboardSignedOut(); }
+      else { sessionStatus.textContent = error.message; element('dashboard-logout').disabled = false; }
+    }
   });
   window.addEventListener('pagehide', clearLink);
   async function start() {

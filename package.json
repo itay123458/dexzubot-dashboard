@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "DexzuBot dashboard frontend. Authenticated runtime hosted on the Raspberry Pi.",
+  "description": "Public GitHub Pages frontend for DexzuBot, with authenticated Pi APIs.",
   "engines": {
     "node": ">=20.10.0"
   },
   "scripts": {
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "build": "node scripts/build-pages.mjs"
   }
 }

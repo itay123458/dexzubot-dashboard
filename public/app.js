@@ -836,6 +836,7 @@ window.addEventListener('resize', updateNavIndicator, { passive: true });
 document.querySelector('.sidebar')?.addEventListener('scroll', updateNavIndicator, { passive: true });
 
 window.addEventListener('beforeunload', event => {
+  if (window.DexzuPagesConfig && document.body.classList.contains('pages-locked')) return;
   if (!dirtyPages.size && !pendingDashboardWrites && !document.querySelector('.youtube-config.dirty')) return;
   event.preventDefault(); event.returnValue = '';
 });

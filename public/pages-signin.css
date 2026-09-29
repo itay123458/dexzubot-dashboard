@@ -1,0 +1,15 @@
+body.pages-locked > :not(#pages-signin):not(script):not(link) { display:none !important; }
+#pages-signin { font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; min-height:100dvh; display:grid; place-items:center; padding:32px 20px; background:radial-gradient(ellipse at 75% 0%,#362138 0,transparent 55%),#15141b; color:#f5f0e9; }
+#pages-signin[hidden] { display:none; }
+.pages-signin-card { width:min(100%,480px); padding:40px; border:1px solid #403641; border-radius:24px; background:#201e28; box-shadow:0 24px 80px #0005; }
+.pages-signin-art { width:100%; max-height:180px; object-fit:contain; margin-bottom:24px; }
+.pages-signin-brand { font-size:12px; letter-spacing:.16em; color:#ffab66; font-weight:700; }
+#pages-signin h1 { font-size:clamp(28px,6vw,40px); line-height:1.15; margin:16px 0; }
+#pages-signin p { color:#c5bbce; line-height:1.65; }
+#pages-signin button { display:block; width:100%; min-height:48px; margin:24px 0 16px; padding:12px 20px; border:0; border-radius:12px; background:#ffab66; color:#23190f; font:inherit; font-weight:700; cursor:pointer; }
+#pages-signin button:hover { background:#ffc18e; }
+#pages-signin button:focus-visible { outline:3px solid #c3a0f0; outline-offset:4px; }
+#pages-signin button:disabled { opacity:.7; cursor:wait; }
+#pages-signin-status { min-height:1.6em; font-size:14px; }
+#pages-signin small { display:block; color:#b9aec4; line-height:1.6; }
+@media(max-width:480px) { .pages-signin-card { padding:28px 24px; } }

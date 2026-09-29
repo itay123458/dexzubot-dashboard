@@ -6,12 +6,22 @@ status, command controls, safety settings, greetings, logging and operations.
 
 ## Hosting and security
 
-The working website remains on the existing Raspberry Pi. The private
-[DexzuBot backend](https://github.com/itay123458/dexzubot) serves these files under
-`/dashboard/`, alongside Discord login and protected APIs. This repository is
-private and does not enable GitHub Pages. No bot token, OAuth secret or database
-is part of the frontend. Access remains invitation-only, with existing manager
-grants and current Discord permissions required for writes.
+The public website runs on [GitHub Pages](https://itay123458.github.io/dexzubot-dashboard/).
+This public repository contains only the interface and local artwork. The private
+DexzuBot backend on the Raspberry Pi handles Discord login, grants, server data
+and bot controls. No bot token, OAuth secret or database belongs in this repository.
+
+Sign-in uses a short-lived, single-use handoff protected by a verifier created in
+the browser tab. The resulting session stays in tab storage and is sent only to
+the configured Pi API. Cookies are not shared across the two sites. Existing
+invitations, manager grants, current membership and Administrator checks remain
+required. Public source does not grant access to server data.
+
+Pushes to `main` validate and deploy `dist/` through the Pages workflow. The build
+uses only `public/`; it rewrites the site base path and adds the public sign-in
+screen. `scripts/build-pages.mjs` contains the public hosting addresses. The Pi
+must set `DASHBOARD_PAGES_URL` to the exact site URL above; its existing Discord
+OAuth callback remains on the Pi. No GitHub Actions secrets are needed.
 
 Dashboard styling is released everywhere. Backend experiments and new YouTube
 creator controls retain their independent Beta gates.
@@ -22,6 +32,7 @@ Requires Node.js 20.10 or newer. There are no frontend package dependencies.
 
 ```sh
 npm run check
+npm run build
 ```
 
 Edit `public/`. Keep the current API contract and DOM IDs. For a working local
