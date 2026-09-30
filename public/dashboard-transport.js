@@ -15,7 +15,7 @@
   let token = null, signedOut = false;
   let readyResolve;
   const ready = new Promise(resolve => { readyResolve = resolve; });
-  const clear = () => { token = null; try { sessionStorage.removeItem(tokenKey); } catch { /* Still clear memory. */ } };
+  const clear = () => { token = null; for (const name of ['localStorage', 'sessionStorage']) { try { window[name].removeItem(tokenKey); } catch { /* Still clear memory. */ } } };
   window.dashboardSignedOut = () => {
     if (signedOut) return;
     signedOut = true; clear();
@@ -81,12 +81,13 @@
         if (!response.ok) throw Error('Sign-in expired. Please continue with Discord again.');
         const data = await response.json();
         if (typeof data.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(data.token)) throw Error('Could not complete sign-in. Please try again.');
-        sessionStorage.setItem(tokenKey, data.token);
+        localStorage.setItem(tokenKey, data.token);
       }
       const params = new URLSearchParams(location.search);
       // An invitation must be accepted explicitly even if another account was signed in.
       if (params.has('invite')) { clear(); return; }
-      token = sessionStorage.getItem(tokenKey);
+      token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
+      if (token) { localStorage.setItem(tokenKey, token); sessionStorage.removeItem(tokenKey); }
       if (!token) return;
       const response = await direct('auth/session', { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) {
@@ -96,6 +97,13 @@
       gate.hidden = true; document.body.classList.remove('pages-locked'); readyResolve();
     } catch (error) { status.textContent = error.name === 'TypeError' || error.name === 'TimeoutError' ? 'Cannot reach DexzuBot right now. Please try again shortly.' : error.message; }
   }
+  window.addEventListener('storage', event => {
+    if ((event.key === tokenKey || event.key === null) && !signedOut && event.newValue !== token) {
+      signedOut = true; document.querySelector('.app-shell').inert = true;
+      // Reload another tab's login/logout without deleting its new credential.
+      location.reload();
+    }
+  });
   window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
   void start();
 })();
