@@ -69,3 +69,10 @@ body button.control-search{background:#24212c!important;color:var(--muted)!impor
 body .dashboard-nav .nav-item:is(:hover,:focus-visible)>span:last-child,body.sidebar-collapsed .dashboard-nav .nav-item:is(:hover,:focus-visible)>span:last-child{transform:none}
 body .dashboard-nav:has(#nav-active-indicator.ready) .nav-item.active,body.sidebar-collapsed .dashboard-nav:has(#nav-active-indicator.ready) .nav-item.active{background:#392a24;border-color:#705039;box-shadow:none}
 body .greeting-preview.goodbye{background:#282230;border-color:#5c456b}body .greeting-preview>span{color:var(--cyan)}body .variable-help code{background:#30283b;color:var(--cyan)}
+
+/* Module guidance and quick-start examples use the same seasonal surfaces. */
+.module-disabled-note{background:var(--surface-2);border-left-color:var(--cyan);color:var(--muted)!important}
+.module-command-list code,.module-health>div{background:var(--surface-2);border-color:var(--line);color:var(--text)}
+.module-health strong{color:var(--text)}
+.module-detail-card.module-disabled{opacity:1;filter:none;border-color:var(--line)}
+#new-server-setup{align-items:flex-start;line-height:1.6}

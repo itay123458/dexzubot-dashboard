@@ -422,6 +422,7 @@ $('sidebar-collapse').onclick = () => { setSidebarCollapsed(!document.body.class
 $('view-logs').onclick = () => { activityExpanded = !activityExpanded; renderRecentActivity(); };
 
 function render(current) {
+  $('new-server-setup').hidden = current.setupRequired !== true;
   // Backend refreshes must not erase edits, focus, or expanded groups.
   const drafts = [...document.querySelectorAll('[data-panel]')].filter(panel => dirtyPages.has(panel.dataset.panel)).map(panel => ({
     panel,
