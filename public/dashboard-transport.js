@@ -27,15 +27,13 @@
   const direct = (path, options = {}) => originalFetch(backend + path, { ...options, credentials: 'omit', cache: 'no-store', signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) });
   const encoded = bytes => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
   button.addEventListener('click', async () => {
-    button.disabled = true; status.textContent = 'Connecting to Discord?';
+    button.disabled = true; status.textContent = 'Connecting to Discord\u2026';
     try {
       const verifier = encoded(crypto.getRandomValues(new Uint8Array(32)));
       sessionStorage.setItem(verifierKey, verifier);
       const challenge = encoded(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
       const target = new URL(backend + 'auth/login');
       target.searchParams.set('pages', '1'); target.searchParams.set('challenge', challenge);
-      const invite = new URLSearchParams(location.search).get('invite');
-      if (invite) target.searchParams.set('invite', invite);
       location.assign(target.href);
     } catch { status.textContent = 'Allow storage for this site, then try signing in again.'; button.disabled = false; }
   });
@@ -71,7 +69,17 @@
   });
   async function start() {
     try {
-      const ticket = new URLSearchParams(location.hash.slice(1)).get('login_ticket');
+      const handoff = new URLSearchParams(location.hash.slice(1));
+      const loginError = handoff.get('login_error');
+      if (loginError) {
+        history.replaceState(null, '', location.pathname);
+        sessionStorage.removeItem(verifierKey);
+        clear();
+        throw Error(loginError === 'access_denied'
+          ? 'This Discord account does not have dashboard access. You must own a server with DexzuBot or have Discord Administrator permission in it.'
+          : 'Sign-in could not finish. Please try again.');
+      }
+      const ticket = handoff.get('login_ticket');
       if (ticket) {
         history.replaceState(null, '', location.pathname + location.search);
         const verifier = sessionStorage.getItem(verifierKey);
@@ -83,9 +91,6 @@
         if (typeof data.token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(data.token)) throw Error('Could not complete sign-in. Please try again.');
         localStorage.setItem(tokenKey, data.token);
       }
-      const params = new URLSearchParams(location.search);
-      // An invitation must be accepted explicitly even if another account was signed in.
-      if (params.has('invite')) { clear(); return; }
       token = localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
       if (token) { localStorage.setItem(tokenKey, token); sessionStorage.removeItem(tokenKey); }
       if (!token) return;

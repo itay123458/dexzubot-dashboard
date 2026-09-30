@@ -8,7 +8,7 @@ This public repository is the source of truth for the dashboard frontend in
 - Preserve existing element IDs, API paths (the Pages transport maps them to the authenticated Pi), server context, dirty-form
   safeguards and keyboard/reduced-motion behavior.
 - Never add bot tokens, OAuth secrets, database credentials or server exports.
-- Login, invitations, permissions and APIs belong to the private DexzuBot backend.
+- Login, current server owner/Administrator permissions and APIs belong to the private DexzuBot backend.
 - Run `npm run check`, then run the backend repository's dashboard browser and auth
   regressions against a synthetic fixture before deploying an updated snapshot.
 - Import a committed, clean release into the bot using `scripts/import-dashboard.mjs`.

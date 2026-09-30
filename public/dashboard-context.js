@@ -40,17 +40,17 @@ async function loadDashboardGuilds() {
     if (!response.ok || !Array.isArray(data.guilds)) throw Error('Could not load your servers.');
     dashboardGuilds = data.guilds;
     serverSelector.replaceChildren();
-    const invitationSelector = document.getElementById('dashboard-invite-workspace');
-    invitationSelector.replaceChildren();
     for (const guild of dashboardGuilds) {
       const option = new Option(guild.name, guild.workspace);
       serverSelector.add(option);
-      invitationSelector.add(new Option(guild.name, guild.workspace));
     }
     const selected = dashboardGuilds.find(g => g.workspace === dashboardWorkspace || g.id === dashboardWorkspace);
+    if (!selected && !workspaceParams.length && dashboardGuilds.length) {
+      location.replace(`/dashboard/?workspace=${encodeURIComponent(dashboardGuilds[0].workspace)}`);
+      return;
+    }
     if (selected) {
       serverSelector.value = selected.workspace;
-      invitationSelector.value = selected.workspace;
       document.body.dataset.guildId = selected.id;
       const preview = selected.serverUpdateEnabled === true;
       // Dashboard presentation is released everywhere; backend feature gates stay independent.
