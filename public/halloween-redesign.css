@@ -40,6 +40,19 @@ body button:not(.nav-item):not(.secondary-button):not(.icon-button):not(.danger-
 body .secondary-button,body .icon-button{background:#302a39!important;color:var(--text)!important;border-color:#645770!important;min-height:44px!important}body .danger-button,body .danger-secondary{background:#482630!important;border-color:#a26071!important;color:#ffd5df!important}body button:disabled{opacity:.55;cursor:not-allowed}
 .switch input:checked+span{background:#e69658;border-color:#ffc18b}.switch span{background:#332e3e;border-color:#70647e}.switch input:focus-visible+span{outline:2px solid var(--blue);outline-offset:4px}
 .logging-group,.how-card,.leveling-settings,.youtube-control .youtube-config,.module-detail-card,.module-access-card,.operations-list>div,.check-list{background:var(--surface);border-color:var(--line)}.check-row,.group-events .check-row,.leveling-setting-row{border-color:var(--line)}.logging-save-bar{bottom:20px;background:#322739;border-color:#7c5a89}.page-save-row{border-color:var(--line)}.youtube-control .youtube-hero{background:var(--surface);border-color:var(--line)}
+/* Logging controls must override the legacy navy event and bulk-action styles. */
+.logging-group summary{color:var(--text)}
+.logging-group .group-count{color:var(--muted)}
+.logging-group .group-title i{background:var(--surface-2);border-color:#645770;color:var(--cyan)}
+body .logging-group .group-actions button{background:var(--surface-2)!important;border-color:#645770!important;color:var(--text)!important}
+body .logging-group .group-actions button:hover:not(:disabled){background:#332d40!important;border-color:var(--cyan)!important}
+.logging-group .group-events .check-row{background:var(--surface-2);border-color:#645770;color:var(--text)}
+.logging-group .group-events .check-row:hover{background:#332d40;border-color:var(--cyan)}
+.logging-group .group-events .check-row.selected{background:#392a24;border-color:#99663f}
+.logging-group .group-events .check-row.selected:hover{background:#453126;border-color:var(--blue)}
+.logging-total{color:var(--muted)!important}
+.logging-destination-grid label>span{color:var(--text)}
+.logging-destination-grid label>small{color:var(--muted)}
 .greeting-preview,.module-preview,.youtube-preview,.prefix-preview{background:#282230;border-color:#5c456b;color:var(--text)}.preview-media{background:#1b1723}.feature-icon{background:#34283f;color:var(--cyan);border-color:#5c456b}.summary-grid>div,.summary-grid>article{background:var(--surface);border-color:var(--line)}.mini-summary,.status-note{color:var(--muted)}
 .toast-stack{bottom:24px}.toast{background:#272131;color:var(--text);border-color:#6d557d}.toast-icon{color:var(--cyan);background:#40304c}.toast small{color:var(--muted)}.toast-progress{background:var(--blue)}
 dialog,#control-search-dialog{background:#24202d;color:var(--text);border-color:#74617f}#control-search-results button{background:#302939!important;color:var(--text)!important;border-color:#61516d!important}#control-search-results button span,.search-hint{color:var(--muted)}
