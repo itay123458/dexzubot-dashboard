@@ -1,7 +1,10 @@
 (() => {
   const section = $('security-section'), form = $('security-form'), fields = $('security-fields');
   let data = null, dirty = false, busy = false;
+  const featureNames = { flood: 'Message raid', raid: 'Join raid', nuke: 'Anti-nuke' };
+  const floodDefaults = { enabled: false, mode: 'contain', messageThreshold: 5, windowSeconds: 60, action: 'kick' };
   const ids = {
+    flood: { enabled: 'enabled', mode: 'mode', messageThreshold: 'threshold', windowSeconds: 'window', action: 'action' },
     raid: { enabled: 'enabled', mode: 'mode', joinThreshold: 'threshold', windowSeconds: 'window', accountAgeDays: 'age', timeoutMinutes: 'timeout' },
     nuke: { enabled: 'enabled', mode: 'mode', actionThreshold: 'threshold', windowSeconds: 'window' },
   };
@@ -31,13 +34,22 @@
     if (!data?.settings) return;
     for (const [feature, mapping] of Object.entries(ids)) for (const [key, suffix] of Object.entries(mapping)) {
       const input = $(`security-${feature}-${suffix}`);
-      if (key === 'enabled') input.checked = data.settings[feature][key] === true;
-      else input.value = data.settings[feature][key];
+      const settings = feature === 'flood' ? { ...floodDefaults, ...data.settings.flood } : data.settings[feature];
+      if (key === 'enabled') input.checked = settings[key] === true;
+      else input.value = settings[key];
     }
     $('security-alert-channel').value = data.settings.alertChannelId || '';
     channels();
     $('security-trusted').value = (data.settings.trustedUserIds || []).join('\n');
     validateTrusted();
+    renderFloodReadiness();
+  }
+  function renderFloodReadiness() {
+    const action = $('security-flood-action').value;
+    const readiness = data?.readiness?.flood?.[action];
+    $('security-flood-readiness').textContent = $('security-flood-mode').value === 'alert'
+      ? 'Alerts only: no members will be kicked or banned.'
+      : `${action === 'ban' ? 'Ban' : 'Kick'} permissions: ${readiness?.ready ? 'present; role hierarchy still applies.' : readiness?.missingPermissions?.length ? `missing ${readiness.missingPermissions.join(', ')}.` : 'readiness unavailable.'}`;
   }
   function line(parent, text, tag = 'li') {
     const element = document.createElement(tag); element.textContent = text; parent.append(element); return element;
@@ -50,15 +62,15 @@
         : 'Beta trial · View only. Only the current server owner can edit protection settings.';
     $('security-incidents').replaceChildren(); $('security-readiness').replaceChildren();
     if (!available) { $('security-preview-result').textContent = ''; return; }
-    for (const feature of ['raid', 'nuke']) {
-      const readiness = data.readiness?.[feature], name = feature === 'raid' ? 'Anti-raid' : 'Anti-nuke';
+    for (const [feature, name] of Object.entries(featureNames)) {
+      const readiness = data.readiness?.[feature];
       line($('security-readiness'), `${name}: ${readiness?.ready ? 'Required bot permissions present' : `Missing permissions: ${(readiness?.missingPermissions || []).join(', ') || 'Readiness unavailable'}`}`);
     }
     for (const warning of data.readiness?.warnings || []) line($('security-readiness'), warning);
     for (const incident of (data.incidents || []).slice(0, 100)) {
       const item = document.createElement('details'); item.className = 'security-incident';
       const date = new Date(incident.createdAt);
-      line(item, `${incident.feature === 'raid' ? 'Anti-raid' : 'Anti-nuke'} · ${incident.status || 'Unknown status'} · ${Number.isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleString()}`, 'summary');
+      line(item, `${featureNames[incident.feature] || 'Protection'} · ${incident.status || 'Unknown status'} · ${Number.isNaN(date.getTime()) ? 'Unknown date' : date.toLocaleString()}`, 'summary');
       line(item, `Incident ${incident.id}${incident.actorId ? ` · Actor ${incident.actorId}` : ''}`, 'p');
       const actions = document.createElement('ul'); item.append(actions);
       for (const action of incident.actions || []) line(actions, `${action.type || 'Action'} · Member ${action.userId || 'unknown'}${action.roleId ? ` · Role ${action.roleId}` : ''} · ${action.status || 'Unknown status'}${action.reason ? ` — ${action.reason}` : ''}`);
@@ -85,7 +97,7 @@
       input[feature] = {};
       for (const [key, suffix] of Object.entries(mapping)) {
         const field = $(`security-${feature}-${suffix}`);
-        input[feature][key] = key === 'enabled' ? field.checked : key === 'mode' ? field.value : Number(field.value);
+        input[feature][key] = key === 'enabled' ? field.checked : ['mode', 'action'].includes(key) ? field.value : Number(field.value);
       }
     }
     return input;
@@ -109,7 +121,7 @@
   }
   form.addEventListener('input', () => {
     if (data?.canEdit !== true || busy) return;
-    markDirty(true); validateTrusted(); status('Unsaved protection changes.');
+    markDirty(true); validateTrusted(); renderFloodReadiness(); status('Unsaved protection changes.');
   });
   form.addEventListener('submit', async event => {
     event.preventDefault();
@@ -130,7 +142,7 @@
       if (result.synthetic !== true) preview.textContent = 'The preview could not be verified. Refresh and try again.';
       else {
         line(preview, result.summary, 'p');
-        for (const [feature, name] of [['raid', 'Anti-raid'], ['nuke', 'Anti-nuke']]) {
+        for (const [feature, name] of Object.entries(featureNames)) {
           const example = result[feature];
           if (example) line(preview, `${name}: ${example.action}`, 'p');
         }

@@ -8,6 +8,7 @@
 #security-status[data-error=true],.security-field-error { color:var(--danger); }
 #security-fields { margin:0; padding:0; border:0; min-width:0; }
 .security-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.security-flood-card { grid-column:1 / -1; }
 #security-content>.card,.security-shared { margin-top:20px; }
 #security-form { margin-top:20px; }
 .security-section label { display:block; font-size:14px; }

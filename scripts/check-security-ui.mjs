@@ -12,11 +12,11 @@ const root = path.resolve(fileURLToPath(new URL('../public/', import.meta.url)))
 const fixtureOrigin = process.env.DASHBOARD_QA_API || 'http://127.0.0.1:13301';
 const writes = [], errors = [];
 let canEdit = true, failSave = false, failRead = false;
-const initial = { alertChannelId: null, trustedUserIds: [], raid: { enabled: false, mode: 'contain', joinThreshold: 10, windowSeconds: 10, accountAgeDays: 7, timeoutMinutes: 10 }, nuke: { enabled: false, mode: 'contain', actionThreshold: 3, windowSeconds: 10 } };
+const initial = { alertChannelId: null, trustedUserIds: [], flood: { enabled: false, mode: 'contain', messageThreshold: 5, windowSeconds: 60, action: 'kick' }, raid: { enabled: false, mode: 'contain', joinThreshold: 10, windowSeconds: 10, accountAgeDays: 7, timeoutMinutes: 10 }, nuke: { enabled: false, mode: 'contain', actionThreshold: 3, windowSeconds: 10 } };
 let settings = structuredClone(initial);
 const payload = workspace => workspace !== 'beta' ? { available: false, canEdit: false, settings: null, readiness: null, incidents: [] } : {
   available: true, canEdit, settings,
-  readiness: { raid: { ready: true, missingPermissions: [] }, nuke: { ready: false, missingPermissions: ['ViewAuditLog'] }, warnings: ['Roles above DexzuBot cannot be removed.'] },
+  readiness: { flood: { ready: true, missingPermissions: [], kick: { ready: true, missingPermissions: [] }, ban: { ready: false, missingPermissions: ['BanMembers'] } }, raid: { ready: true, missingPermissions: [] }, nuke: { ready: false, missingPermissions: ['ViewAuditLog'] }, warnings: ['Roles above DexzuBot cannot be removed.'] },
   incidents: [{ id: 'qa-incident', feature: 'nuke', createdAt: new Date().toISOString(), status: 'partial', actorId: '123456789012345678', evidence: { count: 3 }, actions: [{ userId: '123456789012345678', type: 'remove-role', roleId: '123456789012345679', status: 'failed', reason: '<img src=x onerror="window.securityInjected=true">' }], notification: { status: 'failed', reason: 'Missing channel access' } }],
 };
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.gif': 'image/gif' };
@@ -28,7 +28,7 @@ const server = createServer(async (req, res) => {
       if (req.method === 'POST') {
         let body = ''; for await (const chunk of req) body += chunk;
         writes.push({ path: url.pathname, workspace: url.searchParams.get('workspace'), body: JSON.parse(body) });
-        if (url.pathname.endsWith('/preview')) return json({ synthetic: true, summary: 'Synthetic example only. No Discord changes.', raid: { action: 'timeout' }, nuke: { action: 'remove dangerous roles' } });
+        if (url.pathname.endsWith('/preview')) return json({ synthetic: true, summary: 'Synthetic example only. No Discord changes.', flood: { action: settings.flood?.enabled ? settings.flood.mode === 'alert' ? 'alert only' : settings.flood.action : 'disabled' }, raid: { action: 'timeout' }, nuke: { action: 'remove dangerous roles' } });
         if (failSave) { failSave = false; return json({ error: 'Save unavailable. Try again.' }, 503); }
         if (!canEdit) return json({ error: 'Only the current server owner can edit protection.' }, 403);
         settings = JSON.parse(body);
@@ -62,6 +62,13 @@ try {
   };
   await open();
   assert.equal(await page.locator('#security-save').isDisabled(), false);
+  assert.equal(await page.locator('#security-fields .card h3').first().textContent(), 'Message raid');
+  assert.equal(await page.locator('#security-flood-enabled').isChecked(), false);
+  assert.equal(await page.locator('#security-flood-threshold').inputValue(), '5');
+  assert.equal(await page.locator('#security-flood-window').inputValue(), '60');
+  assert.equal(await page.locator('#security-flood-mode').inputValue(), 'contain');
+  assert.equal(await page.locator('#security-flood-action').inputValue(), 'kick');
+  assert.match(await page.locator('#security-flood-readiness').textContent(), /Kick permissions: present/);
   assert.equal(await page.locator('#security-raid-enabled').isChecked(), false);
   assert.equal(await page.locator('#security-nuke-enabled').isChecked(), false);
   assert.match(await page.locator('#security-readiness').textContent(), /ViewAuditLog/);
@@ -69,6 +76,15 @@ try {
   assert.match(await page.locator('#security-incidents').textContent(), /<img/);
   assert.equal(await page.evaluate(() => window.securityInjected), undefined);
   assert.equal(await page.locator('#security-alert-channel script').count(), 0);
+  for (const [id, value] of [['threshold', '2'], ['threshold', '101'], ['threshold', '5.5'], ['window', '4'], ['window', '301']]) {
+    await page.locator(`#security-flood-${id}`).fill(value);
+    await page.locator('#security-save').click();
+    assert.equal(writes.length, 0, `Invalid message raid ${id} must not be posted`);
+    await page.locator(`#security-flood-${id}`).fill(id === 'threshold' ? '5' : '60');
+  }
+  await page.locator('#security-flood-enabled').check();
+  await page.locator('#security-flood-action').selectOption('ban');
+  assert.match(await page.locator('#security-flood-readiness').textContent(), /BanMembers/);
   await page.locator('#security-raid-threshold').fill('4');
   await page.locator('#security-save').click();
   assert.equal(writes.length, 0, 'Invalid threshold must not be posted');
@@ -83,12 +99,14 @@ try {
   await page.locator('#security-alert-channel').selectOption('222222222222222222');
   await page.evaluate(() => render(state));
   assert.equal(await page.locator('#security-raid-threshold').inputValue(), '15', 'State polling preserves protection draft');
+  assert.equal(await page.locator('#security-flood-action').inputValue(), 'ban', 'State polling preserves message raid action');
   assert.equal(await page.evaluate(() => dirtyPages.has('safety')), true);
   await page.locator('#save-safety-advanced').click();
   assert.equal(await page.evaluate(() => dirtyPages.has('safety')), true, 'Saving adjacent Safety controls preserves protection dirty state');
   await page.locator('#security-preview').click();
   await page.waitForFunction(() => document.getElementById('security-preview-result').textContent.includes('Synthetic'));
-  assert.match(await page.locator('#security-preview-result').textContent(), /Anti-raid: timeout/);
+  assert.match(await page.locator('#security-preview-result').textContent(), /Message raid: disabled/);
+  assert.match(await page.locator('#security-preview-result').textContent(), /Join raid: timeout/);
   assert.match(await page.locator('#security-preview-result').textContent(), /Anti-nuke: remove dangerous roles/);
   assert.equal(await page.locator('#security-raid-threshold').inputValue(), '15', 'Preview preserves draft');
   assert.deepEqual(writes.at(-1).body, {}, 'Preview uses saved settings and sends no actor');
@@ -96,16 +114,34 @@ try {
   await page.locator('#security-save').click();
   await page.waitForFunction(() => document.getElementById('security-status').dataset.error === 'true');
   assert.equal(await page.locator('#security-raid-threshold').inputValue(), '15');
+  assert.equal(await page.locator('#security-flood-action').inputValue(), 'ban', 'Failed save preserves message raid action');
   assert.equal(await page.evaluate(() => dirtyPages.has('safety')), true);
   await page.locator('#security-save').click();
   await page.waitForFunction(() => document.getElementById('security-status').textContent.includes('saved'));
   assert.equal(settings.raid.joinThreshold, 15);
+  assert.deepEqual(settings.flood, { enabled: true, mode: 'contain', messageThreshold: 5, windowSeconds: 60, action: 'ban' });
   assert.equal(settings.raid.enabled, true);
   assert.equal(settings.nuke.enabled, true);
   assert.equal(settings.nuke.mode, 'alert');
   assert.equal(settings.alertChannelId, '222222222222222222');
   assert.deepEqual(settings.trustedUserIds, ['123456789012345678']);
   assert.equal(await page.evaluate(() => dirtyPages.has('safety')), false);
+  await page.locator('#security-preview').click();
+  await page.waitForFunction(() => document.getElementById('security-preview-result').textContent.includes('Message raid: ban'));
+  await page.locator('#security-flood-action').selectOption('kick');
+  await page.locator('#security-flood-mode').selectOption('alert');
+  assert.match(await page.locator('#security-flood-readiness').textContent(), /no members will be kicked or banned/);
+  await page.locator('#security-save').click();
+  await page.waitForFunction(() => document.getElementById('security-status').textContent.includes('saved'));
+  assert.equal(settings.flood.action, 'kick');
+  assert.equal(settings.flood.mode, 'alert');
+  await page.locator('#security-preview').click();
+  await page.waitForFunction(() => document.getElementById('security-preview-result').textContent.includes('Message raid: alert only'));
+  await page.locator('#security-flood-mode').selectOption('contain');
+  await page.locator('#security-save').click();
+  await page.waitForFunction(() => document.getElementById('security-status').textContent.includes('saved'));
+  await page.locator('#security-preview').click();
+  await page.waitForFunction(() => document.getElementById('security-preview-result').textContent.includes('Message raid: kick'));
   await page.locator('#security-raid-threshold').fill('20');
   page.once('dialog', dialog => dialog.dismiss());
   await page.locator('[data-page="overview"]').click();
@@ -126,8 +162,14 @@ try {
   }
   canEdit = false; await open();
   assert.equal(await page.locator('#security-save').isDisabled(), true);
+  assert.equal(await page.locator('#security-flood-action').isDisabled(), true);
   assert.match(await page.locator('#security-access').textContent(), /owner/);
   assert.equal(await page.locator('#security-preview').isDisabled(), false);
+  delete settings.flood;
+  await open();
+  assert.equal(await page.locator('#security-flood-enabled').isChecked(), false, 'Older responses default safely to disabled');
+  assert.equal(await page.locator('#security-flood-threshold').inputValue(), '5');
+  assert.equal(await page.locator('#security-flood-action').inputValue(), 'kick');
   await open('main');
   assert.equal(await page.locator('#security-content').isVisible(), false);
   assert.match(await page.locator('#security-access').textContent(), /Beta/);

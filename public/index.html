@@ -109,7 +109,7 @@
           <div class="feature-heading"><div><p class="eyebrow">PROTECTION</p><h2>Safety Controls</h2><p>Manage message filters and server protection.</p></div><div id="safety-summary" class="mini-summary"></div></div>
           <section id="security-section" class="security-section" aria-labelledby="security-heading" aria-busy="true">
             <article class="card security-intro">
-              <div class="card-head"><div><p class="eyebrow">BETA TRIAL</p><h2 id="security-heading">Server protection</h2><p>Detect join bursts and destructive actions. Both protections start off.</p></div><button id="security-refresh" type="button" class="secondary-button">Refresh status</button></div>
+              <div class="card-head"><div><p class="eyebrow">BETA TRIAL</p><h2 id="security-heading">Server protection</h2><p>Detect message raids, join bursts and destructive actions. All protections start off.</p></div><button id="security-refresh" type="button" class="secondary-button">Refresh status</button></div>
               <p id="security-access">Checking protection access for this server...</p>
               <p id="security-status" role="status" aria-live="polite">Loading protection settings...</p>
             </article>
@@ -118,9 +118,23 @@
                 <fieldset id="security-fields" disabled>
                   <legend class="sr-only">Owner-managed server protection settings</legend>
                   <div class="security-grid">
+                    <article class="card control-card security-flood-card">
+                      <div class="card-head"><div><p class="eyebrow">MESSAGE RAID</p><h3>Message raid</h3><p>Detect one person or bot sending too many messages across this server. Starts at 5 messages in 60 seconds.</p></div></div>
+                      <label class="security-toggle" for="security-flood-enabled"><input id="security-flood-enabled" type="checkbox">Enable message raid protection</label>
+                      <div class="security-grid">
+                        <label for="security-flood-mode">Response<select id="security-flood-mode"><option value="contain">Contain with kick or ban</option><option value="alert">Alerts only</option></select><small>Alerts only records an incident without removing the member.</small></label>
+                        <label for="security-flood-action">Containment action<select id="security-flood-action"><option value="kick">Kick member</option><option value="ban">Ban member</option></select><small>Requires Kick Members or Ban Members and a lower member role. Bans keep existing messages.</small></label>
+                      </div>
+                      <div class="security-number-grid">
+                        <label for="security-flood-threshold">Messages to trigger<input id="security-flood-threshold" type="number" min="3" max="100" step="1" required><small>3–100 messages from one person or bot</small></label>
+                        <label for="security-flood-window">Window (seconds)<input id="security-flood-window" type="number" min="5" max="300" step="1" required><small>5–300 seconds</small></label>
+                      </div>
+                      <p id="security-flood-readiness" role="status" aria-live="polite"></p>
+                      <p>The owner, trusted members, DexzuBot, webhooks and system messages are exempt. Message content is not stored.</p>
+                    </article>
                     <article class="card control-card">
-                      <div class="card-head"><div><p class="eyebrow">ANTI RAID</p><h3>Join burst protection</h3><p>During a burst, timeout only newly joined accounts younger than your limit.</p></div></div>
-                      <label class="security-toggle" for="security-raid-enabled"><input id="security-raid-enabled" type="checkbox">Enable anti-raid</label>
+                      <div class="card-head"><div><p class="eyebrow">JOIN RAID</p><h3>Join raid</h3><p>During a burst, timeout only newly joined accounts younger than your limit.</p></div></div>
+                      <label class="security-toggle" for="security-raid-enabled"><input id="security-raid-enabled" type="checkbox">Enable join raid protection</label>
                       <label for="security-raid-mode">Response<select id="security-raid-mode"><option value="contain">Contain with timeouts</option><option value="alert">Alerts only</option></select></label>
                       <div class="security-number-grid">
                         <label for="security-raid-threshold">Joins to trigger<input id="security-raid-threshold" type="number" min="5" max="100" step="1" required><small>5–100 distinct members</small></label>
@@ -156,7 +170,7 @@
                 <div id="security-preview-result" role="status" aria-live="polite"></div>
               </article>
               <article class="card security-history"><div class="card-head"><div><h3>Recent incidents</h3><p>Up to 100 incidents from the last 30 days. Partial and failed actions stay visible.</p></div></div><div id="security-incidents"></div></article>
-              <article class="card security-guide"><h3>Setup and recovery</h3><p>Only the current server owner can save settings. Administrators can view status, incidents and safe previews. Use <code>/security guide</code> for setup, <code>/security status</code> for checks, and <code>/security raid</code>, <code>/security nuke</code>, <code>/security alerts</code> or <code>/security trusted</code> to configure in Discord.</p><p>Containment reacts after activity is detected; it cannot recover deleted channels or messages. Owners should review incidents and manually remove a mistaken timeout or restore a removed role. Anti-nuke does not exempt administrators unless explicitly trusted. Never add an account you do not fully trust.</p></article>
+              <article class="card security-guide"><h3>Setup and recovery</h3><p>Only the current server owner can save settings. Administrators can view status, incidents and safe previews. Use <code>/security guide</code> for setup, <code>/security status</code> for checks, and <code>/security flood</code> for message raids. Use <code>/security raid</code> for join raids, or <code>/security nuke</code>, <code>/security alerts</code> and <code>/security trusted</code> for other settings.</p><p>Containment reacts after activity is detected; it cannot recover deleted channels or messages. Review incidents before reversing an action: invite a kicked member back, remove a mistaken ban or timeout, or restore a removed role. Message raid and anti-nuke protection include administrators unless explicitly trusted. Never add an account you do not fully trust.</p></article>
             </div>
           </section>
           <div class="split-grid control-grid">
