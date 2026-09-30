@@ -412,3 +412,22 @@ body:has([data-panel="leveling"].active) .topbar > div:first-child { margin-righ
 @media(max-width:600px) { .server-select-label { max-width:160px; } }
 
 [hidden] { display: none !important; }
+
+/* Leveling groups: layout only; existing theme and control styling stay in place. */
+[data-panel="leveling"] .leveling-group-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 32px; padding-top: 24px; }
+[data-panel="leveling"] .leveling-group { min-width: 0; }
+[data-panel="leveling"] .leveling-section-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; min-height: 40px; }
+[data-panel="leveling"] .leveling-section-head h2 { margin: 0; }
+[data-panel="leveling"] .leveling-group .leveling-setting-row { grid-template-columns: minmax(0,1fr); gap: 12px; align-items: start; }
+[data-panel="leveling"] .leveling-rate-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 24px; }
+[data-panel="leveling"] .leveling-rate-grid .leveling-setting-row { grid-template-rows: 1fr auto; }
+[data-panel="leveling"] .leveling-range label { min-width: 0; flex: 1; }
+[data-panel="leveling"] .leveling-range input { width: 100%; }
+[data-panel="leveling"] .leveling-group .leveling-unit input { min-width: 0; width: 100%; }
+[data-panel="leveling"] .leveling-unit span { flex-shrink: 0; }
+@media (max-width: 1100px) {
+  [data-panel="leveling"] .leveling-group-grid { grid-template-columns: minmax(0,1fr); gap: 24px; }
+}
+@media (max-width: 380px) {
+  [data-panel="leveling"] .leveling-rate-grid { grid-template-columns: minmax(0,1fr); gap: 0; }
+}
