@@ -578,6 +578,7 @@ function render(current) {
   $('youtube-preview-copy').textContent = current.youtube.source ? `${current.youtube.source.name} just uploaded a new video!` : 'Your creator’s next upload will appear here.';
   $('youtube-channel').innerHTML = channelOptions(current.channels, current.youtube.channelId, 'Choose a channel');
   $('youtube-preview-avatar').src = current.bot.avatar;
+  renderYouTubeCounter();
   updateSafetyUi(); updateGreetingUi(); validateLeveling(); updateLoggingUi();
   safetyPromoDirty = false; safetyPingDirty = false; safetyAdvancedDirty = false; levelingSettingsDirty = false; levelingRewardsDirty = false;
   ['safety','greetings','leveling','logging'].forEach(page => setDirty(page, false));
@@ -772,7 +773,7 @@ for (const [id, destination] of [['test-moderation-log', 'moderation'], ['test-s
 function youtubeSettings(enabled) {
   if (state.workspace?.serverUpdateEnabled !== true) return { enabled, channelId: $('youtube-channel').value };
   return { enabled, channelId: $('youtube-channel').value,
-    ...(enabled && $('youtube-source').value.trim() ? { sourceInput: $('youtube-source').value.trim() } : {}),
+    ...($('youtube-source').value.trim() ? { sourceInput: $('youtube-source').value.trim() } : {}),
     mentionEveryone: $('youtube-mention-everyone').checked };
 }
 async function savedYouTubeSettings(result, fallback) {
@@ -811,6 +812,32 @@ $('save-youtube').onclick = async () => {
     toast('YouTube settings saved');
   } catch (error) { toast("Couldn't save YouTube settings", true, error.message); }
   finally { button.disabled = false; }
+};
+function renderYouTubeCounter() {
+  const counter = state?.youtube?.counter;
+  $('youtube-counter-card').hidden = counter?.available !== true;
+  if (!counter?.available) return;
+  $('youtube-counter-enabled').checked = counter.enabled === true;
+  $('youtube-counter-channel').innerHTML = channelOptions(counter.channels || [], counter.channelId, 'Choose a voice channel');
+  $('youtube-counter-status').textContent = counter.lastError
+    ? `Last check: ${counter.lastError}`
+    : counter.enabled ? `Enabled${counter.lastUpdatedAt ? ` · Last checked ${new Date(counter.lastUpdatedAt).toLocaleString()}` : ' · Waiting for the next check'}` : 'Disabled';
+}
+for (const id of ['youtube-counter-enabled', 'youtube-counter-channel']) $(id).onchange = () => setDirty('youtube', true, 'counter');
+$('save-youtube-counter').onclick = async () => {
+  const button = $('save-youtube-counter'); button.disabled = true;
+  try {
+    const enabled = $('youtube-counter-enabled').checked;
+    const channelId = $('youtube-counter-channel').value;
+    if (enabled && !channelId) throw Error('Choose a voice channel first.');
+    const result = await post('youtube/counter', { enabled, ...(channelId ? { channelId } : {}) });
+    state.youtube.counter = { ...state.youtube.counter, ...result.counter };
+    setDirty('youtube', false, 'counter'); renderYouTubeCounter(); showSaved(button, 'Save counter');
+    toast('Subscriber counter saved', result.counter.lastError ? 'warning' : false, result.counter.lastError || 'Checks run every 15 minutes.');
+  } catch (error) {
+    $('youtube-counter-status').textContent = error.message;
+    toast("Couldn't save subscriber counter", true, error.message);
+  } finally { button.disabled = false; }
 };
 $('test-youtube').onclick = async () => {
   if (document.querySelector('.youtube-config').classList.contains('dirty')) { toast('Save your YouTube settings before testing.', 'warning'); return; }

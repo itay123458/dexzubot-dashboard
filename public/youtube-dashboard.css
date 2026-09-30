@@ -14,3 +14,9 @@
 #youtube-source-help { font-size:13px; line-height:1.5; margin:0 0 18px; }
 .youtube-mention-choice { display:flex; align-items:center; gap:10px; margin:18px 0; }
 .youtube-mention-choice input { width:18px; height:18px; }
+
+#youtube-counter-card { margin: 16px 0; }
+#youtube-counter-card select { max-width: 560px; }
+#youtube-counter-card p, #youtube-counter-card code { overflow-wrap: anywhere; }
+#youtube-counter-card .field-label { font-size: 13px; text-transform: none; letter-spacing: normal; }
+#youtube-counter-card input[type="checkbox"] { width: auto; margin-right: 8px; }

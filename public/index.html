@@ -218,6 +218,17 @@
               </article>
             </div>
 
+            <article id="youtube-counter-card" class="card" hidden>
+              <div class="card-head"><div><p class="eyebrow">BETA</p><h2>Subscriber counter</h2><p>Show your saved creator's subscriber count in a Discord voice channel name.</p></div></div>
+              <label class="field-label"><input id="youtube-counter-enabled" type="checkbox"> Enable subscriber counter</label>
+              <label class="field-label" for="youtube-counter-channel">Voice channel to rename</label>
+              <select id="youtube-counter-channel" aria-describedby="youtube-counter-help"></select>
+              <p id="youtube-counter-help">Save your creator above first. Upload alerts can stay off. The selected channel becomes “🎃 Subscribers: 1,230”. Checks run every 15 minutes using YouTube's rounded count. Disabling keeps the channel and its name.</p>
+              <p id="youtube-counter-status" role="status" aria-live="polite"></p>
+              <div class="youtube-actions"><button id="save-youtube-counter" type="button">Save counter</button></div>
+              <p>Command: <code>/youtube-counter setup channel:</code> · <code>/youtube-counter status</code> · <code>/youtube-counter disable</code></p>
+            </article>
+
             <div class="youtube-bottom-grid">
               <article class="card latest-card"><div class="card-head"><div><p class="eyebrow">LATEST UPLOAD</p><h2>Latest Upload</h2></div><a id="youtube-latest-link" class="text-link" target="_blank" rel="noopener">Open video ↗</a></div><div id="youtube-latest" class="youtube-empty"><span>▶</span><strong>Loading upload information…</strong></div></article>
               <article class="card recent-youtube-card"><div class="card-head"><div><p class="eyebrow">HISTORY</p><h2>Recent Notifications</h2><p>Recently detected YouTube uploads.</p></div></div><div id="youtube-notifications" class="youtube-empty compact"><span>≡</span><strong>No notifications yet</strong><p>New upload notifications for this server will appear here.</p></div></article>
