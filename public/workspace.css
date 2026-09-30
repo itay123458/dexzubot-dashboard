@@ -364,9 +364,8 @@ body .secondary-button:hover:not(:disabled),body .icon-button:hover:not(:disable
 .leveling-header-control { display: none; align-items: center; gap: 12px; font-size: .875rem; margin-left: auto; }
 body:has([data-panel="leveling"].active) .leveling-header-control { display: flex; }
 body:has([data-panel="leveling"].active)::before { display: none; }
-body:has([data-panel="leveling"].active) .topbar { align-items: center; max-width: 980px; flex-wrap: wrap; }
+body:has([data-panel="leveling"].active) .topbar { align-items: center; flex-wrap: wrap; }
 body:has([data-panel="leveling"].active) .topbar > div:first-child { margin-right: auto; }
-[data-panel="leveling"] { max-width: 980px; margin-inline: auto; }
 .leveling-settings { border-top: 1px solid var(--line); }
 .leveling-setting-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,360px); align-items: center; gap: 32px; padding: 18px 0; border-bottom: 1px solid var(--line); }
 .leveling-setting-row h2,.leveling-setting-row > div > label { display: block; margin: 0; font-size: .9375rem; font-weight: 600; line-height: 1.5; }
