@@ -1,0 +1,30 @@
+/* Layout only: reuse the dashboard's existing Halloween color tokens. */
+.security-section { margin-bottom:24px; min-width:0; overflow-wrap:anywhere; }
+.security-intro,.security-shared,.security-readiness-card,.security-history,.security-guide { padding:24px; }
+.security-section h3 { margin:0 0 8px; font-size:18px; }
+.security-section p,.security-section small,.security-actions>span { color:var(--muted); line-height:1.65; }
+.security-section p { margin:10px 0; }
+#security-status { min-height:24px; }
+#security-status[data-error=true],.security-field-error { color:var(--danger); }
+#security-fields { margin:0; padding:0; border:0; min-width:0; }
+.security-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+#security-content>.card,.security-shared { margin-top:20px; }
+#security-form { margin-top:20px; }
+.security-section label { display:block; font-size:14px; }
+.security-section label small { display:block; font-size:12px; font-weight:400; }
+.security-section input:not([type=checkbox]),.security-section select,.security-section textarea { display:block; width:100%; min-width:0; min-height:44px; margin:8px 0 4px; padding:10px 12px; font:inherit; }
+.security-section textarea { resize:vertical; }
+.security-section .security-toggle { display:flex; align-items:center; gap:10px; min-height:44px; margin:8px 0 14px; }
+.security-toggle input { width:18px; height:18px; flex:none; }
+.security-number-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
+.security-section button { min-height:44px; }
+.security-section :is(button,input,select,textarea,summary):focus-visible { outline:2px solid var(--cyan); outline-offset:3px; }
+.security-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+#security-readiness { padding-left:22px; line-height:1.8; }
+.security-incident { padding:14px 0; border-top:1px solid var(--line); }
+.security-incident summary { cursor:pointer; min-height:44px; padding:10px 0; }
+.security-incident ul { padding-left:22px; line-height:1.7; }
+.security-incident pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; max-height:240px; overflow:auto; }
+.security-field-error:empty,#security-preview-result:empty { display:none; }
+@media(max-width:900px) { .security-grid { grid-template-columns:1fr; } }
+@media(max-width:480px) { .security-number-grid { grid-template-columns:1fr; } .security-intro,.security-shared,.security-readiness-card,.security-history,.security-guide { padding:18px; } .security-intro .card-head { flex-wrap:wrap; } }
