@@ -129,7 +129,7 @@ const icons = {
 };
 const pageDetails = {
   overview: ['Server overview', 'Your community, your controls. All in one place.'],
-  safety: ['Safety', 'Message filters and Beta message raid, join raid and anti-nuke protection.'],
+  safety: ['Safety', 'Manage message filters and automatic moderation.'],
   greetings: ['Greetings', 'Welcome and goodbye member experiences.'],
   leveling: ['Leveling', 'XP rewards, announcements, and progression.'],
   logging: ['Logging', 'Choose which server events are recorded.'],

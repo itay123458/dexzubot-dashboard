@@ -14,7 +14,6 @@
   <link rel="stylesheet" href="/dashboard/embed-motion.css">
   <link rel="stylesheet" href="/dashboard/community-beta.css">
   <link rel="stylesheet" href="/dashboard/faith.css">
-  <link rel="stylesheet" href="/dashboard/security.css">
   <link rel="stylesheet" href="/dashboard/food-collection.css">
   <link rel="stylesheet" href="/dashboard/dashboard-access.css">
   <link rel="stylesheet" href="/dashboard/workspace.css"><link rel="stylesheet" href="/dashboard/command-center.css?v=2">
@@ -106,73 +105,7 @@
         </section>
 
         <section class="page" data-panel="safety">
-          <div class="feature-heading"><div><p class="eyebrow">PROTECTION</p><h2>Safety Controls</h2><p>Manage message filters and server protection.</p></div><div id="safety-summary" class="mini-summary"></div></div>
-          <section id="security-section" class="security-section" aria-labelledby="security-heading" aria-busy="true">
-            <article class="card security-intro">
-              <div class="card-head"><div><p class="eyebrow">BETA TRIAL</p><h2 id="security-heading">Server protection</h2><p>Detect message raids, join bursts and destructive actions. All protections start off.</p></div><button id="security-refresh" type="button" class="secondary-button">Refresh status</button></div>
-              <p id="security-access">Checking protection access for this server...</p>
-              <p id="security-status" role="status" aria-live="polite">Loading protection settings...</p>
-            </article>
-            <div id="security-content" hidden>
-              <form id="security-form" data-dirty-form="security">
-                <fieldset id="security-fields" disabled>
-                  <legend class="sr-only">Owner-managed server protection settings</legend>
-                  <div class="security-grid">
-                    <article class="card control-card security-flood-card">
-                      <div class="card-head"><div><p class="eyebrow">MESSAGE RAID</p><h3>Message raid</h3><p>Detect one person or bot sending too many messages across this server. Starts at 5 messages in 60 seconds.</p></div></div>
-                      <label class="security-toggle" for="security-flood-enabled"><input id="security-flood-enabled" type="checkbox">Enable message raid protection</label>
-                      <div class="security-grid">
-                        <label for="security-flood-mode">Response<select id="security-flood-mode"><option value="contain">Contain with kick or ban</option><option value="alert">Alerts only</option></select><small>Alerts only records an incident without removing the member.</small></label>
-                        <label for="security-flood-action">Containment action<select id="security-flood-action"><option value="kick">Kick member</option><option value="ban">Ban member</option></select><small>Requires Kick Members or Ban Members and a lower member role. Bans keep existing messages.</small></label>
-                      </div>
-                      <div class="security-number-grid">
-                        <label for="security-flood-threshold">Messages to trigger<input id="security-flood-threshold" type="number" min="3" max="100" step="1" required><small>3–100 messages from one person or bot</small></label>
-                        <label for="security-flood-window">Window (seconds)<input id="security-flood-window" type="number" min="5" max="300" step="1" required><small>5–300 seconds</small></label>
-                      </div>
-                      <p id="security-flood-readiness" role="status" aria-live="polite"></p>
-                      <p>The owner, trusted members, DexzuBot, webhooks and system messages are exempt. Message content is not stored.</p>
-                    </article>
-                    <article class="card control-card">
-                      <div class="card-head"><div><p class="eyebrow">JOIN RAID</p><h3>Join raid</h3><p>During a burst, timeout only newly joined accounts younger than your limit.</p></div></div>
-                      <label class="security-toggle" for="security-raid-enabled"><input id="security-raid-enabled" type="checkbox">Enable join raid protection</label>
-                      <label for="security-raid-mode">Response<select id="security-raid-mode"><option value="contain">Contain with timeouts</option><option value="alert">Alerts only</option></select></label>
-                      <div class="security-number-grid">
-                        <label for="security-raid-threshold">Joins to trigger<input id="security-raid-threshold" type="number" min="5" max="100" step="1" required><small>5–100 distinct members</small></label>
-                        <label for="security-raid-window">Window (seconds)<input id="security-raid-window" type="number" min="5" max="60" step="1" required><small>5–60 seconds</small></label>
-                        <label for="security-raid-age">Account age limit (days)<input id="security-raid-age" type="number" min="1" max="30" step="1" required><small>Only accounts younger than 1–30 days</small></label>
-                        <label for="security-raid-timeout">Timeout (minutes)<input id="security-raid-timeout" type="number" min="1" max="60" step="1" required><small>1–60 minutes; longer timeouts stay</small></label>
-                      </div>
-                    </article>
-                    <article class="card control-card">
-                      <div class="card-head"><div><p class="eyebrow">ANTI NUKE</p><h3>Destructive action protection</h3><p>Detect repeated deletions, bans, kicks and dangerous permission grants by one actor.</p></div></div>
-                      <label class="security-toggle" for="security-nuke-enabled"><input id="security-nuke-enabled" type="checkbox">Enable anti-nuke</label>
-                      <label for="security-nuke-mode">Response<select id="security-nuke-mode"><option value="contain">Remove dangerous roles</option><option value="alert">Alerts only</option></select></label>
-                      <div class="security-number-grid">
-                        <label for="security-nuke-threshold">Actions to trigger<input id="security-nuke-threshold" type="number" min="2" max="20" step="1" required><small>2–20 actions by one actor</small></label>
-                        <label for="security-nuke-window">Window (seconds)<input id="security-nuke-window" type="number" min="5" max="60" step="1" required><small>5–60 seconds</small></label>
-                      </div>
-                      <p>DexzuBot removes only dangerous roles it can manage. Higher roles, managed roles and other permissions can prevent full containment.</p>
-                    </article>
-                  </div>
-                  <article class="card security-shared">
-                    <h3>Alerts and trusted accounts</h3>
-                    <div class="security-grid">
-                      <label for="security-alert-channel">Alert channel<select id="security-alert-channel"><option value="">Not configured</option></select><small>Choose a channel DexzuBot can view and send embeds in.</small></label>
-                      <label for="security-trusted">Trusted member IDs<textarea id="security-trusted" rows="3" maxlength="1100" aria-describedby="security-trusted-help security-trusted-error"></textarea><small id="security-trusted-help">Up to 50 Discord member IDs, separated by commas or spaces. The server owner and DexzuBot are always exempt.</small><span id="security-trusted-error" class="security-field-error" aria-live="polite"></span></label>
-                    </div>
-                    <div class="card-actions"><span id="security-draft">No unsaved protection changes.</span><button id="security-save" type="submit">Save protection settings</button></div>
-                  </article>
-                </fieldset>
-              </form>
-              <article class="card security-readiness-card">
-                <h3>Permission readiness</h3><p>Checks reflect saved settings. Role hierarchy and individual members can still prevent containment.</p><ul id="security-readiness"></ul>
-                <div class="security-actions"><button id="security-preview" type="button" class="secondary-button">Run safe preview</button><span>Uses saved settings and synthetic events. No Discord changes.</span></div>
-                <div id="security-preview-result" role="status" aria-live="polite"></div>
-              </article>
-              <article class="card security-history"><div class="card-head"><div><h3>Recent incidents</h3><p>Up to 100 incidents from the last 30 days. Partial and failed actions stay visible.</p></div></div><div id="security-incidents"></div></article>
-              <article class="card security-guide"><h3>Setup and recovery</h3><p>Only the current server owner can save settings. Administrators can view status, incidents and safe previews. Use <code>/security guide</code> for setup, <code>/security status</code> for checks, and <code>/security flood</code> for message raids. Use <code>/security raid</code> for join raids, or <code>/security nuke</code>, <code>/security alerts</code> and <code>/security trusted</code> for other settings.</p><p>Containment reacts after activity is detected; it cannot recover deleted channels or messages. Review incidents before reversing an action: invite a kicked member back, remove a mistaken ban or timeout, or restore a removed role. Message raid and anti-nuke protection include administrators unless explicitly trusted. Never add an account you do not fully trust.</p></article>
-            </div>
-          </section>
+          <div class="feature-heading"><div><p class="eyebrow">PROTECTION</p><h2>Safety Controls</h2><p>Manage message filters.</p></div><div id="safety-summary" class="mini-summary"></div></div>
           <div class="split-grid control-grid">
             <article class="card control-card" data-dirty-form="safety-promo">
               <div class="card-head"><div class="feature-title"><span class="feature-icon">◇</span><div><p class="eyebrow">PROMOTION FILTER</p><h2>Promotion Filter</h2><p>Control where promotional content is allowed.</p></div></div><label class="switch"><input id="promo-enabled" type="checkbox"><span></span></label></div>
@@ -417,7 +350,6 @@
   <script src="/dashboard/dashboard-access.js" defer></script>
   <script src="/dashboard/app.js" defer></script>
   <script src="/dashboard/prefix-settings.js" defer></script>
-  <script src="/dashboard/security.js" defer></script>
   <script src="/dashboard/beta-roles.js" defer></script>
   <script src="/dashboard/embed-motion.js" defer></script>
   <script src="/dashboard/community-beta.js" defer></script>
