@@ -3,13 +3,13 @@
 body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);font-size:14px;line-height:1.5}
 body::before,body::after{display:none} [hidden]{display:none!important}
 .app-shell,body.sidebar-collapsed .app-shell{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:100vh}
-body .sidebar.control-header,body.sidebar-collapsed .sidebar.control-header{position:sticky;top:0;display:flex;flex-direction:column;align-items:stretch;width:244px;height:100vh;min-height:0;margin:0;padding:28px 16px 20px;border:0;border-right:1px solid var(--line);border-radius:0;background:#1b1922;box-shadow:none;gap:22px;z-index:30;overflow-y:auto}
+body .sidebar.control-header,body.sidebar-collapsed .sidebar.control-header{position:sticky;top:0;display:flex;flex-direction:column;align-items:stretch;width:244px;height:100vh;min-height:0;margin:0;padding:28px 16px 20px;border:0;border-right:1px solid var(--line);border-radius:0;background:#1b1922;box-shadow:none;gap:22px;z-index:30;overflow:hidden}
 body .brand{gap:10px;min-width:0;padding:0 6px;align-items:center;border:0}
 .brand-avatar,.brand img{width:38px;height:38px;border-radius:12px}.brand img{border:1px solid #69533e;box-shadow:none}
 .brand strong{font-size:14px;letter-spacing:.08em}body .brand .halloween-brand{font-size:8px;letter-spacing:.1em;gap:4px;margin-top:4px;color:var(--blue)}
 body button.control-search{width:100%;min-width:0;min-height:44px;padding:10px;gap:8px;background:#24212c;color:var(--muted);border:1px solid var(--line);border-radius:9px;font-size:12px}
 .control-search span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.control-search svg{flex:none;width:16px;height:16px}.control-search kbd{font-size:9px;padding:2px 3px;border-color:#575062}
-body .dashboard-nav,body.sidebar-collapsed .dashboard-nav{position:static;transform:none;display:flex;flex-direction:column;align-items:stretch;gap:4px;max-width:none;width:100%;padding:0;margin:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;overflow:visible}
+body .dashboard-nav,body.sidebar-collapsed .dashboard-nav{position:static;transform:none;display:flex;flex-direction:column;align-items:stretch;gap:4px;max-width:none;width:100%;padding:0;margin:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
 body .dashboard-nav #nav-active-indicator{display:none!important}
 body .dashboard-nav .nav-label{display:block!important;margin:15px 12px 5px;color:#a9a0b6;font-size:10px;letter-spacing:.13em;text-transform:uppercase}.dashboard-nav .nav-label:first-of-type{margin-top:0}
 body .dashboard-nav .nav-item,body.sidebar-collapsed .dashboard-nav .nav-item{position:relative;display:flex;justify-content:flex-start;align-items:center;flex-direction:row;gap:12px;flex:0 0 auto;width:100%;height:44px;min-height:44px;padding:9px 12px;border:1px solid transparent;border-radius:9px;color:var(--muted);background:transparent;box-shadow:none;transform:none;font-size:13px;font-weight:500}
@@ -18,7 +18,7 @@ body .dashboard-nav .nav-item:hover{background:#2b2735;border-color:transparent;
 body .dashboard-nav .nav-item.active{background:#392a24;border-color:#705039;color:#ffc28f;box-shadow:none}
 body .dashboard-nav .nav-item.active::before{content:"";display:block;position:absolute;left:-17px;top:10px;width:3px;height:24px;background:var(--blue);border-radius:0 3px 3px 0;box-shadow:none}
 body .dashboard-nav .nav-item::after{display:none}.nav-icon{width:20px;height:20px;flex:none}.nav-icon svg{width:19px;height:19px}body .dashboard-nav .nav-item:hover .nav-icon{transform:none}
-body .sidebar-footer{margin:auto 0 0;padding:16px 10px 0;align-items:flex-start;border-top:1px solid var(--line);gap:5px}.sidebar-footer small{font-size:11px;color:var(--muted)}.pill{font-size:12px!important}.pill.online{color:var(--green)}
+body .sidebar-footer{flex-shrink:0;margin:auto 0 0;padding:16px 10px 0;align-items:flex-start;border-top:1px solid var(--line);gap:5px}.sidebar-footer small{font-size:11px;color:var(--muted)}.pill{font-size:12px!important}.pill.online{color:var(--green)}
 .workspace,body.sidebar-collapsed .workspace{width:100%;min-width:0;margin:0;padding:0 36px 48px}
 .topbar{max-width:var(--width);margin:0 auto;min-height:140px;padding:30px 0 26px;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .topbar>div:first-child{min-width:0}.topbar h1{font-size:30px;font-weight:650;letter-spacing:-.035em;line-height:1.25}.topbar>div>p:last-child{font-size:13px;color:var(--muted);margin:8px 0 0}

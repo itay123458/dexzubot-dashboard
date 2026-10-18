@@ -48,10 +48,11 @@
   const navigationIcons = { overview: icons.chart, safety: icons.shield, greetings: icons.members,
     leveling: icons.trend, logging: icons.command, youtube: icon('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/>'),
     faith: icon('<path d="M12 5v15M3 4h5a4 4 0 0 1 4 2 4 4 0 0 1 4-2h5v15h-5a4 4 0 0 0-4 2 4 4 0 0 0-4-2H3Z"/>'),
+    'ai-voice': icon('<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>'),
     operations: icons.shield, 'module-counting': icons.hash, 'module-economy': icons.wallet,
     'module-moderation': icons.shield, 'module-ticket': icons.ticket, 'module-serverstats': icons.chart };
   navigation.querySelectorAll('[data-page]').forEach(button => {
-    button.querySelector('.nav-icon').innerHTML = navigationIcons[button.dataset.page];
+    button.querySelector('.nav-icon').innerHTML = navigationIcons[button.dataset.page] || icons.command;
   });
   const labels = { 'promo-enabled': 'Enable promotion filter', 'spam-enabled': 'Enable spam protection',
     'mentions-enabled': 'Enable mention limit', 'greeting-cards': 'Enable greeting cards',
