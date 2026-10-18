@@ -17,9 +17,12 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const failures = [];
 let passed = 0;
 
-async function setup({ width = 1440, height = 1000, reducedMotion = 'no-preference', webgl = true } = {}) {
+async function setup({ width = 1440, height = 1000, reducedMotion = 'no-preference', webgl = true, delayCore = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion, serviceWorkers: 'block' });
   const calls = [], errors = [], routeErrors = [], logins = [];
+  let releaseCore, coreRequested;
+  const coreGate = new Promise(resolve => { releaseCore = resolve; });
+  const coreRequest = new Promise(resolve => { coreRequested = resolve; });
   await context.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
     // The keyboard login test ends at an inert HTML fixture. No OAuth or API
@@ -33,6 +36,10 @@ async function setup({ width = 1440, height = 1000, reducedMotion = 'no-preferen
       return route.abort('blockedbyclient');
     }
     const relative = decodeURIComponent(url.pathname.slice(new URL(site).pathname.length)) || 'index.html';
+    if (relative === 'command-core.js' && delayCore) {
+      coreRequested();
+      await coreGate;
+    }
     if (/^(api|auth)\//.test(relative)) {
       calls.push(relative);
       return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"QA blocks all APIs"}' });
@@ -58,8 +65,8 @@ async function setup({ width = 1440, height = 1000, reducedMotion = 'no-preferen
   const page = await context.newPage();
   page.setDefaultTimeout(6000);
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(site, { waitUntil: 'networkidle' });
-  return { context, page, calls, errors, routeErrors, logins };
+  await page.goto(site, { waitUntil: delayCore ? 'domcontentloaded' : 'networkidle' });
+  return { context, page, calls, errors, routeErrors, logins, coreRequest, releaseCore };
 }
 
 async function settle(page) {
@@ -133,6 +140,38 @@ async function stackedDemos(page, label) {
   assert.notEqual(await page.locator('.feature-stage').evaluate(element => getComputedStyle(element).position), 'sticky', label + ': no pinned feature stage');
 }
 
+async function expectCoreState(page, ready, label) {
+  const host = page.locator('.command-story .command-core');
+  await host.scrollIntoViewIfNeeded();
+  if (ready) {
+    await page.waitForFunction(() => document.querySelector('.command-story .command-core')?.dataset.coreReady === 'true');
+    assert.equal(await host.locator('canvas').count(), 1, label + ': exactly one canvas per host');
+    assert.equal(await host.locator('canvas').getAttribute('aria-hidden'), 'true', 'decorative WebGL stays out of the accessibility tree');
+  } else {
+    await page.waitForFunction(() => !document.querySelector('.command-story .command-core canvas'));
+    assert.equal(await host.locator('canvas').count(), 0, label + ': canvases removed');
+    assert.equal(await host.getAttribute('data-core-ready'), null, label + ': ready marker cleared');
+    await host.locator('.core-fallback').waitFor({ state: 'visible' });
+  }
+}
+
+async function supportsWebGL(page) {
+  return page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl');
+    if (!gl) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  });
+}
+
+async function preferStatic(page, label) {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await settle(page);
+  await expectCoreState(page, false, label);
+  await stackedDemos(page, label);
+}
+
 try {
   await test('desktop', {}, async ({ page }) => {
     await noOverflow(page, 'desktop hero');
@@ -177,13 +216,30 @@ try {
     await noOverflow(page, 'desktop return');
   });
 
-  for (const width of [390, 760]) await test('mobile-' + width, { width, height: 844 }, async ({ page }) => {
+  for (const width of [320, 390, 760]) await test('mobile-' + width, { width, height: 844 }, async ({ page }) => {
     await noOverflow(page, 'mobile hero');
     await page.screenshot({ path: path.join(output, 'cinematic-mobile-' + width + '.png') });
     await stackedDemos(page, 'mobile ' + width);
     await page.locator('#pages-signin-button').scrollIntoViewIfNeeded();
     await noOverflow(page, 'mobile connect');
     await page.screenshot({ path: path.join(output, 'cinematic-mobile-' + width + '-connect.png') });
+  });
+
+  await test('desktop-1024', { width: 1024, height: 900 }, async ({ page }) => {
+    for (const selector of ['.story-hero', '#story-features', '#story-connect']) {
+      await page.locator(selector).scrollIntoViewIfNeeded();
+      await settle(page);
+      await noOverflow(page, '1024px ' + selector);
+    }
+    await page.screenshot({ path: path.join(output, 'cinematic-desktop-1024.png') });
+  });
+
+  await test('short-viewport', { width: 1024, height: 600 }, async ({ page }) => {
+    await noOverflow(page, 'short hero');
+    await stackedDemos(page, 'short viewport');
+    await page.locator('#pages-signin-button').scrollIntoViewIfNeeded();
+    await noOverflow(page, 'short connect');
+    await page.screenshot({ path: path.join(output, 'cinematic-short-viewport.png') });
   });
 
   await test('reduced-motion', { reducedMotion: 'reduce' }, async ({ page }) => {
@@ -200,6 +256,57 @@ try {
     assert.equal(visible, true, 'fallback remains visible without a WebGL context');
     await noOverflow(page, 'WebGL fallback');
     await page.screenshot({ path: path.join(output, 'cinematic-webgl-fallback.png') });
+  });
+
+  await test('runtime-motion-preference', {}, async ({ page }) => {
+    const webglAvailable = await supportsWebGL(page);
+    if (webglAvailable) await expectCoreState(page, true, 'initial enhancement');
+    await preferStatic(page, 'runtime reduced motion');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await settle(page);
+    await page.locator('.command-story .command-core').scrollIntoViewIfNeeded();
+    if (webglAvailable) await expectCoreState(page, true, 're-enabled enhancement');
+    else console.log('INFO: WebGL unavailable; runtime preference checks cover static fallback.');
+    await page.locator('#story-features').scrollIntoViewIfNeeded();
+    await settle(page);
+    assert.equal(await page.locator('.story-demo[aria-hidden="false"]').count(), 1, 'animated layout restores a single accessible active demo');
+    assert.equal(await page.locator('.story-demo[aria-hidden="true"]').count(), 2, 'inactive animated demos leave accessibility tree');
+    await noOverflow(page, 'runtime motion restored');
+    await preferStatic(page, 'second runtime reduced motion');
+  });
+
+  await test('pending-core-preference-race', { delayCore: true }, async ({ page, coreRequest, releaseCore }) => {
+    const host = page.locator('.command-story .command-core');
+    await host.scrollIntoViewIfNeeded();
+    await Promise.race([coreRequest, new Promise((_, reject) => setTimeout(() => reject(Error('Lazy WebGL module was not requested')), 6000))]);
+    assert.equal(await page.evaluate(() => document.readyState !== 'loading'), true, 'module stays pending after DOMContentLoaded');
+    assert.equal(await host.locator('canvas').count(), 0, 'no canvas before module response');
+    await preferStatic(page, 'preference changed during pending import');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await host.scrollIntoViewIfNeeded();
+    await settle(page); // Give the new observer time to await the same import.
+    const webglAvailable = await supportsWebGL(page);
+    releaseCore();
+    await page.waitForLoadState('networkidle');
+    await settle(page);
+    if (webglAvailable) await expectCoreState(page, true, 'pending import resolved after preference round trip');
+    else {
+      assert.equal(await host.locator('canvas').count(), 0);
+      await host.locator('.core-fallback').waitFor({ state: 'visible' });
+      console.log('INFO: WebGL unavailable; pending import checks cover static fallback.');
+    }
+    await preferStatic(page, 'pending import cleanup');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await host.scrollIntoViewIfNeeded();
+    if (webglAvailable) await expectCoreState(page, true, 'mount before pagehide');
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
+    await expectCoreState(page, false, 'pagehide cleanup');
+    // The auth transport reloads real bfcache restores. Use a regular lifecycle
+    // event here to isolate the cinematic module's disposal and remounting.
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
+    await settle(page);
+    if (webglAvailable) await expectCoreState(page, true, 'pageshow resumes with a single canvas');
+    await noOverflow(page, 'pending import race');
   });
 
   await test('keyboard-oauth', { reducedMotion: 'reduce' }, async ({ page, logins }) => {
