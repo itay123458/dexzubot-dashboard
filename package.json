@@ -9,6 +9,6 @@
   },
   "scripts": {
     "check": "node scripts/check.mjs",
-    "build": "node scripts/build-pages.mjs"
+    "build": "node scripts/build-pages.mjs && node scripts/check-pages-assets.mjs"
   }
 }

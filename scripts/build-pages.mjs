@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const output = path.join(root, 'dist');
 const basePath = '/dexzubot-dashboard/';
@@ -24,7 +25,14 @@ let html = await readFile(path.join(output, 'index.html'), 'utf8');
 html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ${apiOrigin}; img-src 'self' data: https:; object-src 'none'; base-uri 'none'; form-action 'none'">\n  <meta name="referrer" content="no-referrer">\n  <link rel="stylesheet" href="${basePath}pages-signin.css">`);
 html = html.replace('<body>', `<body class="pages-locked">${gate}`);
 html = html.replace(`<script src="${basePath}dashboard-transport.js"`, `<script src="${basePath}pages-config.js" defer></script>\n  <script src="${basePath}dashboard-transport.js"`);
-await writeFile(path.join(output, 'index.html'), html);
 await writeFile(path.join(output, 'pages-config.js'), `window.DexzuPagesConfig = Object.freeze(${JSON.stringify({ apiOrigin, basePath, siteOrigin })});\n`);
+// Stable URLs kept old scripts/styles in browser caches after a Pages release.
+// Hash the final built bytes, including generated files and rewritten paths.
+for(const match of [...html.matchAll(/(src|href)="\/dexzubot-dashboard\/([^"?#]+\.(?:js|css))(?:\?[^"#]*)?"/g)]){
+  const content=await readFile(path.join(output,match[2]));
+  const version=createHash('sha256').update(content).digest('hex').slice(0,12);
+  html=html.replaceAll(match[0],`${match[1]}="${basePath}${match[2]}?v=${version}"`);
+}
+await writeFile(path.join(output, 'index.html'), html);
 await writeFile(path.join(output, '.nojekyll'), '');
 console.log('Built public GitHub Pages assets in dist/');

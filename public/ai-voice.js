@@ -8,7 +8,7 @@
   function render(result,renderForm){
     data=result;
     $('ai-voice-helper').textContent=result.helper.ready?'Local helper ready.':'Local helper unavailable. Start it on the owner’s PC.';
-    $('ai-voice-session-state').textContent=result.session.state==='idle'?'No active session.':`Session ${result.session.state}. ${result.session.speakerCount??1} eligible speakers.${result.session.answeringUserId?` Answering: ${result.session.answeringUserId}.`:''}`;
+    $('ai-voice-session-state').textContent=result.session.state==='idle'?'No active session.':`Session ${result.session.state}. ${result.session.speakerCount??1} people can participate.${result.session.answeringUserId?` Answering ${result.session.answeringName||'the current speaker'}.`:''}`;
     $('ai-voice-stop').disabled=result.session.state==='idle'||busy;
     if(!renderForm)return;
     const settings=result.settings;
