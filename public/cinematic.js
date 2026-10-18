@@ -11,7 +11,7 @@
   const demos = [...document.querySelectorAll('.story-demo')];
   const buttons = [...document.querySelectorAll('.story-step-button')];
   const cores = new Map();
-  let frame = 0, observer, stopped = false, modulePromise;
+  let frame = 0, observer, stopped = false, modulePromise, generation = 0;
   const clamp = value => Math.max(0, Math.min(1, value));
   const staticLayout = () => reduced.matches || mobile.matches || short.matches;
   function selectStep(step) {
@@ -40,6 +40,7 @@
   function schedule() { if (!frame && !stopped && !document.hidden) frame = requestAnimationFrame(update); }
   async function loadCore(host) {
     if (stopped || reduced.matches || cores.has(host)) return;
+    const mountingGeneration = generation;
     cores.set(host, null);
     try {
       // Resolve beside this script so GitHub Pages and the Pi share the same module.
@@ -47,9 +48,10 @@
       moduleUrl.search = new URL(scriptUrl).search;
       modulePromise ||= import(moduleUrl.href);
       const { mountCore } = await modulePromise;
+      if (mountingGeneration !== generation) return;
       if (stopped || reduced.matches || !host.isConnected) { cores.delete(host); return; }
       cores.set(host, mountCore(host));
-    } catch { cores.delete(host); /* The static illustration stays visible. */ }
+    } catch { if (mountingGeneration === generation) cores.delete(host); /* Keep the fallback. */ }
   }
   const scriptUrl = document.currentScript.src;
   function observeCores() {
@@ -63,6 +65,7 @@
     } // Unsupported devices retain the static illustration.
   }
   function preferenceChanged() {
+    generation++;
     for (const core of cores.values()) core?.destroy();
     cores.clear(); observeCores(); schedule();
   }
@@ -93,6 +96,7 @@
   mobile.addEventListener('change', () => { demos.forEach(demo => { demo.style.removeProperty('--tilt-x'); demo.style.removeProperty('--tilt-y'); }); schedule(); });
   window.addEventListener('pageshow', () => { stopped = false; observeCores(); schedule(); });
   window.addEventListener('pagehide', () => {
+    generation++;
     stopped = true; cancelAnimationFrame(frame); frame = 0; observer?.disconnect();
     for (const core of cores.values()) core?.destroy();
     cores.clear();
