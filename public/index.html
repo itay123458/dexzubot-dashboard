@@ -85,6 +85,8 @@
             <article class="card ai-voice-session"><div><h2>Local helper &amp; session</h2><p id="ai-voice-helper" role="status">Checking local helper…</p><p id="ai-voice-session-state">No active session.</p></div><button id="ai-voice-stop" type="button" class="secondary-button" disabled>Stop session</button></article>
             <form id="ai-voice-form" class="card"><h2>Voice access</h2><fieldset id="ai-voice-fields" disabled>
               <label class="ai-voice-toggle"><input id="ai-voice-enabled" type="checkbox"> Enable AI voice in this server</label>
+              <label class="ai-voice-toggle"><input id="ai-voice-research" type="checkbox" aria-describedby="ai-voice-research-help"> Research the web automatically when needed</label>
+              <p id="ai-voice-research-help">Search queries are sent to public search providers. Answers stay short, with source links in the voice channel chat. Changing this option ends any active session; start a new one with /aivoice start.</p>
               <div class="ai-voice-grid">
                 <label for="ai-voice-roles">Allowed roles<select id="ai-voice-roles" multiple size="5" aria-describedby="ai-voice-roles-help"></select><small id="ai-voice-roles-help">Leave empty to allow any member with voice permissions. Use Ctrl or Command to select several.</small></label>
                 <label for="ai-voice-channels">Allowed voice channels<select id="ai-voice-channels" multiple size="5" aria-describedby="ai-voice-channels-help"></select><small id="ai-voice-channels-help">Leave empty to allow any ordinary voice channel.</small></label>
@@ -359,7 +361,7 @@
   <div id="toasts" class="toast-stack" aria-live="polite"></div>
   <link rel="stylesheet" href="/dashboard/motion.css">
   <link id="halloween-theme" rel="stylesheet" href="/dashboard/halloween.css" media="all">
-  <link rel="stylesheet" href="/dashboard/halloween-redesign.css?v=20261018-voice-fix">
+  <link rel="stylesheet" href="/dashboard/halloween-redesign.css?v=20261018-research">
   <dialog id="role-preview-dialog" aria-labelledby="role-preview-heading" aria-describedby="role-preview-copy">
     <h2 id="role-preview-heading">Review role changes</h2><p id="role-preview-copy"></p><p id="role-preview-expiry"></p>
     <p>No changes have been applied. A new dashboard preview replaces the previous one.</p>
@@ -375,10 +377,10 @@
   <script src="/dashboard/embed-motion.js" defer></script>
   <script src="/dashboard/community-beta.js" defer></script>
   <script src="/dashboard/faith.js" defer></script>
-  <script src="/dashboard/ai-voice.js?v=20261018-voice-fix" defer></script>
+  <script src="/dashboard/ai-voice.js?v=20261018-research" defer></script>
   <script src="/dashboard/food-collection.js" defer></script>
   <script src="/dashboard/community-releases.js" defer></script>
-  <script src="/dashboard/workspace.js?v=20261018-voice-fix" defer></script>
+  <script src="/dashboard/workspace.js?v=20261018-research" defer></script>
   <script src="/dashboard/control-center.js" defer></script>
 </body>
 </html>

@@ -9,10 +9,12 @@
     data=result;
     $('ai-voice-helper').textContent=result.helper.ready?'Local helper ready.':'Local helper unavailable. Start it on the owner’s PC.';
     $('ai-voice-session-state').textContent=result.session.state==='idle'?'No active session.':`Session ${result.session.state}. ${result.session.speakerCount??1} people can participate.${result.session.answeringUserId?` Answering ${result.session.answeringName||'the current speaker'}.`:''}`;
+    if(result.session.sourceNoticeFailed)$('ai-voice-session-state').textContent+=' Source links could not be posted. Check the voice channel permissions.';
     $('ai-voice-stop').disabled=result.session.state==='idle'||busy;
     if(!renderForm)return;
     const settings=result.settings;
     $('ai-voice-enabled').checked=settings.enabled;
+    $('ai-voice-research').checked=settings.webResearch===true;
     fill('ai-voice-roles',result.roles,settings.allowedRoleIds);
     fill('ai-voice-channels',result.channels,settings.allowedChannelIds);
     const voices=[...result.voices];
@@ -41,8 +43,8 @@
   form.addEventListener('submit',async event=>{
     event.preventDefault();if(!enabled||busy||!data||!form.reportValidity())return;
     stopPolling();busy=true;fields.disabled=true;form.setAttribute('aria-busy','true');feedback('Saving…');
-    const settings={enabled:$('ai-voice-enabled').checked,allowedRoleIds:selected('ai-voice-roles'),allowedChannelIds:selected('ai-voice-channels'),voice:$('ai-voice-voice').value,maxSessionSeconds:Number($('ai-voice-limit').value)};
-    try{const saved=await post('ai-voice/settings',settings);data={...data,settings:saved.settings||settings};markDirty(false);render(data,true);feedback('AI voice settings saved.');}
+    const settings={enabled:$('ai-voice-enabled').checked,webResearch:$('ai-voice-research').checked,allowedRoleIds:selected('ai-voice-roles'),allowedChannelIds:selected('ai-voice-channels'),voice:$('ai-voice-voice').value,maxSessionSeconds:Number($('ai-voice-limit').value)};
+    try{const saved=await post('ai-voice/settings',settings);data={...data,settings:saved.settings||settings};markDirty(false);render(data,true);feedback(saved.sessionStopped?'AI voice settings saved. Any active session has ended.':'AI voice settings saved.');}
     catch(error){feedback(error.message,true);}
     finally{busy=false;fields.disabled=!enabled;form.removeAttribute('aria-busy');render(data,false);poll();}
   });
