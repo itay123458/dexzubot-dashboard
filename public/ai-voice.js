@@ -1,5 +1,5 @@
 (() => {
-  let enabled=false,data=null,dirty=false,busy=false,timer=null,visible=document.querySelector('[data-panel="ai-voice"]')?.classList.contains('active')===true,request=null;
+  let enabled=false,data=null,dirty=false,busy=false,timer=null,visible=document.querySelector('[data-panel="ai-voice"]')?.classList.contains('active')===true,request=null,sequence=0;
   const form=$('ai-voice-form'),fields=$('ai-voice-fields');
   const feedback=(message,error=false)=>{$('ai-voice-feedback').textContent=message;$('ai-voice-feedback').dataset.error=String(error);};
   const markDirty=value=>{dirty=value;setDirty('ai-voice',value);};
@@ -18,31 +18,32 @@
     const voices=result.voices.length?result.voices:[{id:settings.voice,label:'Lessac (English) — helper unavailable'}];
     fill('ai-voice-voice',voices,[settings.voice]);$('ai-voice-limit').value=settings.maxSessionSeconds;
   }
-  function stopPolling(){clearTimeout(timer);timer=null;request?.abort();request=null;}
+  function stopPolling(){clearTimeout(timer);timer=null;sequence++;request?.abort();request=null;}
   function poll(){clearTimeout(timer);if(enabled&&visible&&!document.hidden)timer=setTimeout(()=>void load(false),5000);}
   async function load(initial=true){
     if(!enabled||busy){poll();return;}
-    request=new AbortController();
+    const generation=++sequence,controller=new AbortController();request=controller;
     try{
-      const response=await fetch(dashboardApiUrl('ai-voice'),{cache:'no-store',signal:request.signal});
+      const response=await fetch(dashboardApiUrl('ai-voice'),{cache:'no-store',signal:controller.signal});
       const result=await response.json();
+      if(generation!==sequence)return;
       if(!response.ok){
         if(response.status===401||response.status===403){enabled=false;fields.disabled=true;$('ai-voice-stop').disabled=true;stopPolling();}
         throw Error(result.error||'AI voice could not be loaded.');
       }
-      render(result,!dirty);fields.disabled=false;
+      render(result,!dirty);fields.disabled=busy||!enabled;
       if(initial&&!dirty)feedback('Settings loaded.');
-    }catch(error){if(error.name!=='AbortError')feedback(error.message,true);}
-    finally{request=null;poll();}
+    }catch(error){if(error.name!=='AbortError'&&generation===sequence)feedback(error.message,true);}
+    finally{if(generation===sequence){request=null;poll();}}
   }
   form.addEventListener('input',()=>{markDirty(true);feedback('Unsaved changes.');});
   form.addEventListener('submit',async event=>{
     event.preventDefault();if(!enabled||busy||!data||!form.reportValidity())return;
-    busy=true;fields.disabled=true;form.setAttribute('aria-busy','true');feedback('Saving…');
+    stopPolling();busy=true;fields.disabled=true;form.setAttribute('aria-busy','true');feedback('Saving…');
     const settings={enabled:$('ai-voice-enabled').checked,allowedRoleIds:selected('ai-voice-roles'),allowedChannelIds:selected('ai-voice-channels'),voice:$('ai-voice-voice').value,maxSessionSeconds:Number($('ai-voice-limit').value)};
-    try{await post('ai-voice/settings',settings);markDirty(false);feedback('AI voice settings saved.');}
+    try{const saved=await post('ai-voice/settings',settings);data={...data,settings:saved.settings||settings};markDirty(false);render(data,true);feedback('AI voice settings saved.');}
     catch(error){feedback(error.message,true);}
-    finally{busy=false;fields.disabled=!enabled;form.removeAttribute('aria-busy');poll();}
+    finally{busy=false;fields.disabled=!enabled;form.removeAttribute('aria-busy');render(data,false);poll();}
   });
   $('ai-voice-stop').addEventListener('click',async()=>{
     if(!enabled||busy)return;busy=true;$('ai-voice-stop').disabled=true;

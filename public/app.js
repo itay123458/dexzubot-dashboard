@@ -430,6 +430,7 @@ function render(current) {
     values: [...panel.querySelectorAll('input,select,textarea')].map(input => ({
       id: input.id, group: input.dataset.group, key: input.getAttribute('value'),
       value: input.value, checked: input.checked,
+      selectedValues: input.multiple ? [...input.selectedOptions].map(option => option.value) : null,
     })),
   }));
   const expanded = [...document.querySelectorAll('details')].map(element => ({ id: element.id, group: element.dataset.logGroup, open: element.open }));
@@ -589,7 +590,11 @@ function render(current) {
   renderModulePage(location.hash.slice(1));
   for (const { panel, values } of drafts) for (const saved of values) {
     const input = saved.id ? $(saved.id) : [...panel.querySelectorAll('input')].find(item => item.dataset.group === saved.group && item.getAttribute('value') === saved.key);
-    if (input) { input.value = saved.value; if (typeof saved.checked === 'boolean') input.checked = saved.checked; }
+    if (input) {
+      if (saved.selectedValues) for (const option of input.options) option.selected = saved.selectedValues.includes(option.value);
+      else input.value = saved.value;
+      if (typeof saved.checked === 'boolean') input.checked = saved.checked;
+    }
   }
   for (const saved of expanded) {
     const element = saved.id ? $(saved.id) : [...document.querySelectorAll('details')].find(item => saved.group && item.dataset.logGroup === saved.group);
