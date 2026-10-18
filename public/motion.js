@@ -75,6 +75,11 @@
     active.frame = requestAnimationFrame(tick);
   }
 
+  function setCount(element, value) {
+    cancelCount(element);
+    if (element?.isConnected) element.textContent = String(value ?? "\u2014");
+  }
+
   function animate(element, keyframes, options = {}) {
     animations.get(element)?.cancel();
     animations.delete(element);
@@ -189,7 +194,7 @@
     document.querySelectorAll('.motion-enter').forEach(clearEntrance);
   }
 
-  window.DexzuMotion = Object.freeze({ pageChanged, reveal: discover, count, animate, closeDialog, cancelDialogClose });
+  window.DexzuMotion = Object.freeze({ pageChanged, reveal: discover, count, setCount, animate, closeDialog, cancelDialogClose });
   window.addEventListener('pagehide', stop);
   window.addEventListener('pageshow', start);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });

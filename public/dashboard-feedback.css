@@ -1,0 +1,38 @@
+/* Request feedback reflects confirmed API state and retains each control's icon. */
+button.saving-feedback {
+  cursor: progress;
+  opacity: .8;
+}
+button.saved-feedback {
+  border-color: var(--cyan, #8fd9ee);
+  box-shadow: 0 0 0 2px #8fd9ee18;
+}
+.dashboard-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  border: 1px solid #cd7985;
+  border-radius: 16px;
+  background: #231c28;
+  color: var(--text, #edf4ff);
+}
+.dashboard-load-error h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+.dashboard-load-error p {
+  margin: 0;
+  max-width: 65ch;
+  color: var(--muted, #aebace);
+  overflow-wrap: anywhere;
+}
+.dashboard-load-error button { flex: 0 0 auto; }
+body[data-dashboard-loading="failed"] #dashboard-main .skeleton,
+body[data-dashboard-loading="failed"] #dashboard-main .skeleton-line,
+#dashboard-loading-status[hidden] { display: none !important; }
+@media (max-width: 600px) {
+  .dashboard-load-error { align-items: flex-start; flex-direction: column; gap: 16px; padding: 20px; }
+}

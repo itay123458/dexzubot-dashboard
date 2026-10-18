@@ -17,6 +17,8 @@ let activityInitialized = false;
 let latestActivityId = null;
 const $ = id => document.getElementById(id);
 const feedbackTimers = new Set();
+const saveFeedback = new WeakMap();
+const activeSaveControls = new Set();
 function feedbackLater(callback, delay) {
   const timer = setTimeout(() => { feedbackTimers.delete(timer); callback(); }, delay);
   feedbackTimers.add(timer); return timer;
@@ -25,7 +27,7 @@ function cancelFeedback(timer) { clearTimeout(timer); feedbackTimers.delete(time
 window.addEventListener('pagehide', () => {
   feedbackTimers.forEach(clearTimeout); feedbackTimers.clear();
   document.querySelectorAll('.toast').forEach(element => element.remove());
-  document.querySelectorAll('.saved-feedback').forEach(element => { element.classList.remove('saved-feedback'); element.removeAttribute('aria-label'); });
+  activeSaveControls.forEach(restoreSaveFeedback);
 });
 const toast = (message, error = false, detail = '') => {
   const type = typeof error === 'string' ? error : (error ? 'error' : 'success');
@@ -76,6 +78,10 @@ const post = async (path, body) => {
   pendingDashboardWrites += 1;
   const control = requestControl;
   const wasDisabled = control?.disabled;
+  const previousBusy = control?.getAttribute('aria-busy');
+  const saving = control?.matches('button[id^="save-"]') === true;
+  let succeeded = false;
+  if (saving) showSaving(control);
   if (control) { control.disabled = true; control.setAttribute('aria-busy', 'true'); }
   try {
   const response = await fetch(dashboardApiUrl(path), {
@@ -83,10 +89,19 @@ const post = async (path, body) => {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Update failed');
+  succeeded = true;
   return data;
   } finally {
     pendingDashboardWrites -= 1;
-    if (control) { control.disabled = wasDisabled; control.removeAttribute('aria-busy'); }
+    if (control) {
+      control.disabled = wasDisabled;
+      if (previousBusy === null) control.removeAttribute('aria-busy');
+      else control.setAttribute('aria-busy', previousBusy);
+    }
+    if (saving) {
+      if (succeeded) showSaved(control);
+      else restoreSaveFeedback(control);
+    }
   }
 };
 const checkbox = (id, label, checked, group) => `<label class="check-row"><input type="checkbox" data-group="${group}" value="${id}" ${checked ? 'checked' : ''}><span>${label}</span></label>`;
@@ -99,12 +114,52 @@ function animateNumber(element, from, to, duration) {
   else if (element) element.textContent = String(to ?? '—');
 }
 
-function showSaved(button, originalLabel = '✓ Save Changes') {
-  if (!button) return;
+function restoreSaveFeedback(button) {
+  const feedback = saveFeedback.get(button);
+  if (!feedback) return;
   cancelFeedback(button._savedTimer);
+  feedback.label.nodeValue = feedback.originalText;
+  if (feedback.originalAria === null) button.removeAttribute('aria-label');
+  else button.setAttribute('aria-label', feedback.originalAria);
+  button.classList.remove('saving-feedback', 'saved-feedback');
+  saveFeedback.delete(button);
+  activeSaveControls.delete(button);
+}
+
+function captureSaveFeedback(button) {
+  if (saveFeedback.has(button)) return saveFeedback.get(button);
+  // Change the label's text node so SVGs and separate icon spans survive.
+  const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+  let label;
+  while (walker.nextNode()) {
+    if (/\bsave\b/i.test(walker.currentNode.nodeValue)) { label = walker.currentNode; break; }
+  }
+  if (!label) return null;
+  const feedback = { label, originalText: label.nodeValue, originalAria: button.getAttribute('aria-label') };
+  saveFeedback.set(button, feedback);
+  activeSaveControls.add(button);
+  return feedback;
+}
+
+function showSaving(button) {
+  restoreSaveFeedback(button);
+  const feedback = captureSaveFeedback(button);
+  if (!feedback) return;
+  feedback.label.nodeValue = ' Saving...';
+  button.classList.add('saving-feedback');
+  button.setAttribute('aria-label', 'Saving changes');
+}
+
+function showSaved(button) {
+  if (!button) return;
+  const feedback = captureSaveFeedback(button);
+  if (!feedback) return;
+  cancelFeedback(button._savedTimer);
+  feedback.label.nodeValue = ' Saved';
+  button.classList.remove('saving-feedback');
   button.classList.add('saved-feedback');
   button.setAttribute('aria-label', 'Saved successfully');
-  button._savedTimer = feedbackLater(() => { button.classList.remove('saved-feedback'); button.removeAttribute('aria-label'); }, 1300);
+  button._savedTimer = feedbackLater(() => restoreSaveFeedback(button), 1300);
 }
 
 function updateNavIndicator() {
@@ -468,11 +523,10 @@ function render(current) {
     card.querySelector('span').textContent = key;
     card.querySelector('small').textContent = secondary;
     const number = card.querySelector('strong');
-    if (!previousMetricValues.has(key) || previousMetricValues.get(key) !== value) {
-      const from = previousMetricValues.has(key) ? Number(number.textContent) : 0;
-      animateNumber(number, Number.isFinite(from) ? from : 0, value, 450);
-      previousMetricValues.set(key, value);
-    }
+    if (!previousMetricValues.has(key)) animateNumber(number, 0, value, 450);
+    else if (window.DexzuMotion?.setCount) window.DexzuMotion.setCount(number, value);
+    else number.textContent = String(value);
+    previousMetricValues.set(key, value);
   });
   const moduleMeta = {
     core: [icons.command, 'Essential bot functionality'], counting: [icons.hash, 'Server counting game'], economy: [icons.wallet, 'Currency and economy commands'],
@@ -697,12 +751,59 @@ async function loadYouTubeLatest() {
   renderYouTubeLatest();
 }
 
+function initialLoadFailure(error) {
+  const main = $('dashboard-main');
+  let alert = $('dashboard-load-error');
+  if (!alert) {
+    alert = document.createElement('section');
+    alert.id = 'dashboard-load-error';
+    alert.className = 'dashboard-load-error';
+    alert.setAttribute('role', 'alert');
+    const copy = document.createElement('div');
+    const heading = document.createElement('h2'); heading.textContent = 'Could not load this workspace';
+    const message = document.createElement('p'); message.id = 'dashboard-load-error-message';
+    const retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Try again';
+    retry.onclick = async () => {
+      retry.disabled = true;
+      try { await load(); main.focus({ preventScroll: true }); }
+      catch { /* The inline error remains available until a real response succeeds. */ }
+      finally { retry.disabled = false; }
+    };
+    copy.append(heading, message); alert.append(copy, retry); main.prepend(alert);
+  }
+  $('dashboard-load-error-message').textContent = error.message || 'Check your connection and try again.';
+  main.querySelectorAll('.skeleton, .skeleton-line').forEach(element => { element.hidden = true; });
+  document.body.dataset.dashboardLoading = 'failed';
+  $('dashboard-loading-status')?.setAttribute('hidden', '');
+}
+
 async function load() {
-  const response = await fetch(dashboardApiUrl('state'), { cache: 'no-store' });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Could not load dashboard');
-  if (data.workspace?.key !== dashboardWorkspace && data.workspace?.guildId !== dashboardWorkspace) throw new Error('The selected workspace could not be verified. Reload before making changes.');
-  render(data);
+  const initial = document.body.dataset.dashboardReady !== 'true';
+  if (initial) {
+    $('dashboard-main').setAttribute('aria-busy', 'true');
+    $('metrics').setAttribute('aria-busy', 'true');
+    document.body.dataset.dashboardLoading = 'loading';
+  }
+  try {
+    const response = await fetch(dashboardApiUrl('state'), { cache: 'no-store' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not load dashboard');
+    if (data.workspace?.key !== dashboardWorkspace && data.workspace?.guildId !== dashboardWorkspace) throw new Error('The selected workspace could not be verified. Reload before making changes.');
+    render(data);
+    $('dashboard-load-error')?.remove();
+    document.body.dataset.dashboardReady = 'true';
+    document.body.dataset.dashboardLoading = 'ready';
+    $('dashboard-loading-status')?.setAttribute('hidden', '');
+    if (initial) window.dispatchEvent(new CustomEvent('dexzu-data-ready'));
+  } catch (error) {
+    if (initial) initialLoadFailure(error);
+    throw error;
+  } finally {
+    if (initial) {
+      $('dashboard-main').setAttribute('aria-busy', 'false');
+      $('metrics').setAttribute('aria-busy', 'false');
+    }
+  }
 }
 
 $('refresh-dashboard').onclick = async () => {
@@ -723,7 +824,6 @@ $('save-leveling').onclick = async () => {
   if (button.disabled) return;
   if (!validateLeveling()) return;
   button.disabled = true;
-  button.textContent = 'Saving...';
   try {
     const settings = {
       enabled: $('leveling-enabled').checked,
@@ -742,7 +842,6 @@ $('save-leveling').onclick = async () => {
     toast(error.message, true);
   } finally {
     button.disabled = false;
-    button.textContent = '✓ Save Changes';
   }
 };
 $('add-level-reward').onclick = () => {
@@ -860,7 +959,7 @@ $('retry-youtube').onclick = async () => { const button = $('retry-youtube'); bu
 $('run-health-check').onclick = async () => { const button = $('run-health-check'); button.disabled = true; try { const result = await post('operations/health', {}); state.operations.health = result.health; renderOperations(); toast(result.health.failed ? 'Health check found problems' : 'All required checks passed', result.health.failed ? 'warning' : false); } catch (error) { toast('Health check failed', true, error.message); } finally { button.disabled = false; } };
 $('save-access-roles').onclick = async () => { const button = $('save-access-roles'); button.disabled = true; try { const roleIds = [...document.querySelectorAll('[data-group=access-role]:checked')].map(input => input.value); const result = await post('operations/access-roles', { roleIds }); state.commandAccessRoleIds = result.roleIds; showSaved(button, '✓ Save Roles'); toast('Staff command roles saved', false, 'Discord command access was synchronized.'); await load(); } catch (error) { toast("Couldn't save staff roles", true, error.message); } finally { button.disabled = false; } };
 $('create-snapshot').onclick = async () => { const button = $('create-snapshot'); button.disabled = true; try { await post('operations/snapshot', {}); toast('Configuration snapshot created'); await load(); } catch (error) { toast("Couldn't create snapshot", true, error.message); } finally { button.disabled = false; } };
-load().catch(error => toast(error.message, true));
+load().catch(() => { /* Initial failures provide an inline retry action. */ });
 let activityTimer;
 const startActivityPolling = () => { clearInterval(activityTimer); activityTimer = setInterval(() => { if (!document.hidden) void refreshRecentActivity(); }, 30000); };
 startActivityPolling();

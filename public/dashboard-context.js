@@ -33,11 +33,19 @@ serverSelector.addEventListener('change', () => {
   }
   location.assign(`/dashboard/?workspace=${encodeURIComponent(destination)}`);
 });
+const serverListRetry = document.createElement('button');
+serverListRetry.type = 'button'; serverListRetry.className = 'server-list-retry secondary-button';
+serverListRetry.textContent = 'Retry server list'; serverListRetry.hidden = true;
+serverSelector.closest('.workspace-context').append(serverListRetry);
+serverListRetry.addEventListener('click', () => { void loadDashboardGuilds(); });
 async function loadDashboardGuilds() {
+  serverSelector.setAttribute('aria-busy', 'true');
+  serverListRetry.disabled = true;
   try {
     const response = await fetch('/dashboard/api/guilds', { cache: 'no-store' });
     const data = await response.json();
     if (!response.ok || !Array.isArray(data.guilds)) throw Error('Could not load your servers.');
+    serverListRetry.hidden = true;
     dashboardGuilds = data.guilds;
     serverSelector.replaceChildren();
     for (const guild of dashboardGuilds) {
@@ -69,7 +77,10 @@ async function loadDashboardGuilds() {
   } catch (error) {
     serverSelector.disabled = true;
     serverSelector.replaceChildren(new Option('Servers unavailable', ''));
+    serverListRetry.hidden = false;
     toast(error.message, true);
+  } finally {
+    serverSelector.removeAttribute('aria-busy'); serverListRetry.disabled = false;
   }
 }
 const dashboardGuildsReady = loadDashboardGuilds();

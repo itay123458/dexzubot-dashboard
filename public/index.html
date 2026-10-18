@@ -104,13 +104,13 @@
               <p class="season-description">Keep the good company. Handle the chaos.<br>Your community is right where you left it.</p>
               <div class="hero-actions"><button id="overview-modules-link" type="button">Manage commands <span aria-hidden="true">&#8599;</span></button><button class="secondary-button" type="button" data-open-page="operations">Server settings</button></div>
             </div>
-            <img class="seasonal-illustration" src="/dashboard/halloween-garden.svg" alt="" width="280" height="240" aria-hidden="true">
+            <div class="dashboard-core" aria-hidden="true"><div class="command-core"><img class="core-fallback" src="/dashboard/assets/command-core.svg" alt="" width="260" height="230"></div></div>
             <div class="hero-status-strip">
               <div class="bot-identity"><img id="hero-bot-avatar" alt="" width="40" height="40"><div><strong>DexzuBot</strong><p id="hero-connection">Connecting to your bot...</p></div></div>
               <dl class="runtime-stats"><div><dt>Uptime</dt><dd id="hero-uptime">&#8212;</dd></div><div><dt>Memory</dt><dd id="hero-memory">&#8212;</dd></div><div><dt>Discord API</dt><dd id="hero-api">Checking</dd></div></dl>
             </div>
           </article>
-          <section class="metrics" id="metrics" aria-label="Server statistics"><div class="metric skeleton"></div><div class="metric skeleton"></div><div class="metric skeleton"></div><div class="metric skeleton"></div></section>
+          <div id="dashboard-loading-status" class="dashboard-loading-status" role="status"><span class="core-mark core-assembling" aria-hidden="true"><i></i><i></i><i></i></span><span>Loading your server...</span></div><section class="metrics" id="metrics" aria-label="Server statistics" aria-busy="true"><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div></section>
           <div class="insight-grid">
             <article class="card activity-card"><div class="card-head"><div><p class="eyebrow">EVENT STREAM</p><h2>Live activity</h2><p>Latest events from DexzuBot.</p></div><button id="view-logs" class="secondary-button">View all</button></div><div id="recent-activity" class="activity-feed"><div class="empty-state"><span class="empty-icon">≡</span><strong>No recent activity</strong><p>New DexzuBot events will appear here.</p></div></div></article>
             <aside class="overview-rail"><article class="card status-card"><div class="card-head"><div><p class="eyebrow">LIVE SYSTEM</p><h2>System Status</h2></div><button id="refresh-dashboard" class="icon-button" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button></div><div id="system-status" class="system-status"><div class="status-row skeleton-line"></div><div class="status-row skeleton-line"></div></div></article><article class="card performance-card"><div class="card-head"><div><p class="eyebrow">RUNTIME</p><h2>Server at a glance</h2></div></div><div id="performance" class="performance-list"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></article></aside>
@@ -367,6 +367,9 @@
     <p>No changes have been applied. A new dashboard preview replaces the previous one.</p>
     <div class="role-actions"><button id="role-confirm" type="button">Confirm changes</button><button id="role-cancel" type="button" class="secondary-button">Cancel</button></div>
   </dialog>
+  <link rel="stylesheet" href="/dashboard/dashboard-feedback.css">
+  <link rel="stylesheet" href="/dashboard/cinematic.css">
+  <script src="/dashboard/cinematic.js" defer></script>
   <script src="/dashboard/dashboard-transport.js" defer></script>
   <script src="/dashboard/motion.js" defer></script>
   <script src="/dashboard/dashboard-context.js" defer></script>
