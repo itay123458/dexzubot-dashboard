@@ -1,0 +1,12 @@
+[data-panel="ai-voice"] .card + .card,[data-panel="ai-voice"] #ai-voice-controls{margin-top:20px}
+.ai-voice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:24px 0}
+.ai-voice-grid label{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ai-voice-grid small{font-weight:400;color:var(--muted);line-height:1.6}
+.ai-voice-grid select[multiple]{min-height:150px;padding:8px}
+.ai-voice-grid option{padding:8px}
+.ai-voice-toggle{display:flex;align-items:center;gap:12px;min-height:44px}
+.ai-voice-toggle input{width:20px;height:20px}
+.ai-voice-session{display:flex;align-items:center;justify-content:space-between;gap:24px}
+#ai-voice-fields{border:0;padding:0;margin:0;min-width:0}
+#ai-voice-feedback[data-error="true"]{color:var(--danger,var(--text))}
+@media(max-width:760px){.ai-voice-grid{grid-template-columns:1fr}.ai-voice-session{align-items:stretch;flex-direction:column}}

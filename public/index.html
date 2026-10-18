@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/dashboard/embed-motion.css">
   <link rel="stylesheet" href="/dashboard/community-beta.css">
   <link rel="stylesheet" href="/dashboard/faith.css">
+  <link rel="stylesheet" href="/dashboard/ai-voice.css">
   <link rel="stylesheet" href="/dashboard/food-collection.css">
   <link rel="stylesheet" href="/dashboard/dashboard-access.css">
   <link rel="stylesheet" href="/dashboard/workspace.css"><link rel="stylesheet" href="/dashboard/command-center.css?v=2">
@@ -37,6 +38,7 @@
         <button class="nav-item" data-page="safety" title="Safety"><span class="nav-icon">◇</span><span>Safety</span></button>
         <p class="nav-label nav-group">Server</p>
         <button id="faith-nav" class="nav-item" data-page="faith" title="Faith" hidden><span class="nav-icon"></span><span>Faith</span></button>
+        <button id="ai-voice-nav" class="nav-item" data-page="ai-voice" title="AI voice (Beta)" hidden><span class="nav-icon" aria-hidden="true">◉</span><span>AI voice</span></button>
         <button class="nav-item" data-page="greetings" title="Greetings"><span class="nav-icon">✦</span><span>Greetings</span></button>
         <button class="nav-item" data-page="leveling" title="Leveling"><span class="nav-icon">↗</span><span>Leveling</span></button>
         <button class="nav-item" data-page="logging" title="Logging"><span class="nav-icon">≡</span><span>Logging</span></button>
@@ -73,6 +75,25 @@
       <aside id="workspace-notice" class="workspace-notice" hidden><strong>Beta workspace</strong><span>Changes here apply to your beta server. Bot status is shared with Main.</span></aside>
 
       <main id="dashboard-main" tabindex="-1">
+        <section class="page" data-panel="ai-voice">
+          <article class="card"><p class="eyebrow">Beta experiment</p><h2>Talk with DexzuBot</h2>
+            <p>Join an allowed voice channel and use <strong>/aivoice start</strong>. Only the person who starts it is heard. Pause after speaking to hear a short AI reply.</p>
+            <p>The owner’s PC must be awake with the local AI helper running. Speech is processed locally; recordings and conversation transcripts are not saved. No paid AI API is used.</p>
+            <p>Use <strong>/aivoice stop</strong> to end it. One session at a time; music and AI cannot share a server voice connection.</p>
+          </article>
+          <div id="ai-voice-controls" hidden>
+            <article class="card ai-voice-session"><div><h2>Local helper &amp; session</h2><p id="ai-voice-helper" role="status">Checking local helper…</p><p id="ai-voice-session-state">No active session.</p></div><button id="ai-voice-stop" type="button" class="secondary-button" disabled>Stop session</button></article>
+            <form id="ai-voice-form" class="card"><h2>Voice access</h2><fieldset id="ai-voice-fields" disabled>
+              <label class="ai-voice-toggle"><input id="ai-voice-enabled" type="checkbox"> Enable AI voice in this server</label>
+              <div class="ai-voice-grid">
+                <label for="ai-voice-roles">Allowed roles<select id="ai-voice-roles" multiple size="5" aria-describedby="ai-voice-roles-help"></select><small id="ai-voice-roles-help">Leave empty to allow any member with voice permissions. Use Ctrl or Command to select several.</small></label>
+                <label for="ai-voice-channels">Allowed voice channels<select id="ai-voice-channels" multiple size="5" aria-describedby="ai-voice-channels-help"></select><small id="ai-voice-channels-help">Leave empty to allow any ordinary voice channel.</small></label>
+                <label for="ai-voice-voice">Installed voice<select id="ai-voice-voice"></select></label>
+                <label for="ai-voice-limit">Maximum session length (seconds)<input id="ai-voice-limit" type="number" min="30" max="600" step="1" required><small>30–600 seconds. Sessions also end after 60 seconds without activity.</small></label>
+              </div><button id="ai-voice-save" type="submit">Save settings</button>
+            </fieldset><p id="ai-voice-feedback" role="status" aria-live="polite">Available in Beta only.</p></form>
+          </div>
+        </section>
         <section class="page active" data-panel="overview">
           <article class="bot-banner seasonal-hero" aria-label="Bot connection and runtime">
             <div class="seasonal-hero-copy">
@@ -354,6 +375,7 @@
   <script src="/dashboard/embed-motion.js" defer></script>
   <script src="/dashboard/community-beta.js" defer></script>
   <script src="/dashboard/faith.js" defer></script>
+  <script src="/dashboard/ai-voice.js" defer></script>
   <script src="/dashboard/food-collection.js" defer></script>
   <script src="/dashboard/community-releases.js" defer></script>
   <script src="/dashboard/workspace.js" defer></script>

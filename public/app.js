@@ -135,6 +135,7 @@ const pageDetails = {
   logging: ['Logging', 'Choose which server events are recorded.'],
   youtube: ['YouTube', 'Upload alerts for this server’s YouTube creator.'],
   faith: ['Faith', 'Daily Bible verses and respectful community discussion.'],
+  'ai-voice': ['AI voice', 'Local voice conversations with DexzuBot. Beta only.'],
   operations: ['Operations', 'Role management, autorole, health checks, staff access, and backups.'],
   'module-counting': ['Counting', 'Manage the server counting game commands.'],
   'module-economy': ['Economy', 'Manage currency, rewards, shops, and economy commands.'],
@@ -255,7 +256,7 @@ function showPage(pageName) {
 }
 
 function setDirty(page, dirty = true, source = 'page') {
-  if (!['safety', 'greetings', 'leveling', 'logging', 'operations', 'faith'].includes(page)) return;
+  if (!['safety', 'greetings', 'leveling', 'logging', 'operations', 'faith', 'ai-voice'].includes(page)) return;
   setDirty.sources ||= new Map();
   const sources = setDirty.sources.get(page) || new Set();
   if (dirty) sources.add(source); else sources.delete(source);
