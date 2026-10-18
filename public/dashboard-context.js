@@ -18,6 +18,9 @@ for (const link of document.querySelectorAll('a[data-workspace]')) {
       event.preventDefault();
       toast('Wait for the current save to finish before switching servers.', 'info');
     }
+    else if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+      window.DexzuNavigationMotion?.prepare(link.href);
+    }
   });
 }
 // Full navigation keeps pending reads and drafts tied to their original document.
@@ -31,7 +34,9 @@ serverSelector.addEventListener('change', () => {
     toast('Wait for the current save to finish before switching servers.', 'info');
     return;
   }
-  location.assign(`/dashboard/?workspace=${encodeURIComponent(destination)}`);
+  const target = `/dashboard/?workspace=${encodeURIComponent(destination)}`;
+  window.DexzuNavigationMotion?.prepare(target);
+  location.assign(target);
 });
 const serverListRetry = document.createElement('button');
 serverListRetry.type = 'button'; serverListRetry.className = 'server-list-retry secondary-button';
