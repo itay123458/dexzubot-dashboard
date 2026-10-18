@@ -8,14 +8,15 @@
   function render(result,renderForm){
     data=result;
     $('ai-voice-helper').textContent=result.helper.ready?'Local helper ready.':'Local helper unavailable. Start it on the owner’s PC.';
-    $('ai-voice-session-state').textContent=result.session.state==='idle'?'No active session.':`Session ${result.session.state}. Caller: ${result.session.callerId}.`;
+    $('ai-voice-session-state').textContent=result.session.state==='idle'?'No active session.':`Session ${result.session.state}. ${result.session.speakerCount??1} eligible speakers.${result.session.answeringUserId?` Answering: ${result.session.answeringUserId}.`:''}`;
     $('ai-voice-stop').disabled=result.session.state==='idle'||busy;
     if(!renderForm)return;
     const settings=result.settings;
     $('ai-voice-enabled').checked=settings.enabled;
     fill('ai-voice-roles',result.roles,settings.allowedRoleIds);
     fill('ai-voice-channels',result.channels,settings.allowedChannelIds);
-    const voices=result.voices.length?result.voices:[{id:settings.voice,label:'Lessac (English) — helper unavailable'}];
+    const voices=[...result.voices];
+    if(!voices.some(voice=>voice.id===settings.voice))voices.push({id:settings.voice,label:`${({'en_US-ljspeech-high':'LJ Speech (English, high quality)','en_US-lessac-medium':'Lessac (English)'})[settings.voice]||'Saved voice'} — unavailable`});
     fill('ai-voice-voice',voices,[settings.voice]);$('ai-voice-limit').value=settings.maxSessionSeconds;
   }
   function stopPolling(){clearTimeout(timer);timer=null;sequence++;request?.abort();request=null;}

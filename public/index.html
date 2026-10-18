@@ -77,9 +77,9 @@
       <main id="dashboard-main" tabindex="-1">
         <section class="page" data-panel="ai-voice">
           <article class="card"><p class="eyebrow">Beta experiment</p><h2>Talk with DexzuBot</h2>
-            <p>Join an allowed voice channel and use <strong>/aivoice start</strong>. Only the person who starts it is heard. Pause after speaking to hear a short AI reply.</p>
+            <p>Join an allowed voice channel and use <strong>/aivoice start</strong>. Everyone with an allowed role in that channel can speak automatically, one question at a time. Pause for a reply; only the person being answered can interrupt it.</p>
             <p>The owner’s PC must be awake with the local AI helper running. Speech is processed locally; recordings and conversation transcripts are not saved. No paid AI API is used.</p>
-            <p>Use <strong>/aivoice stop</strong> to end it. One session at a time; music and AI cannot share a server voice connection.</p>
+            <p>A listening notice appears in the voice channel chat before capture starts. The host or an administrator can use <strong>/aivoice stop</strong>; leave the channel to stop participating. One session at a time; music and AI cannot share a server voice connection.</p>
           </article>
           <div id="ai-voice-controls" hidden>
             <article class="card ai-voice-session"><div><h2>Local helper &amp; session</h2><p id="ai-voice-helper" role="status">Checking local helper…</p><p id="ai-voice-session-state">No active session.</p></div><button id="ai-voice-stop" type="button" class="secondary-button" disabled>Stop session</button></article>
