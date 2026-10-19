@@ -44,7 +44,7 @@
         <button class="nav-item" data-page="safety" title="Safety"><span class="nav-icon">◇</span><span>Safety</span></button>
         <p class="nav-label nav-group">Server</p>
         <button id="faith-nav" class="nav-item" data-page="faith" title="Faith" hidden><span class="nav-icon"></span><span>Faith</span></button>
-        <button id="ai-voice-nav" class="nav-item" data-page="ai-voice" title="AI voice (Beta)" hidden><span class="nav-icon" aria-hidden="true">◉</span><span>AI voice</span></button>
+        <button id="ai-voice-nav" class="nav-item" data-page="ai-voice" title="AI voice (bot owner only)" hidden><span class="nav-icon" aria-hidden="true">◉</span><span>AI voice</span></button>
         <button class="nav-item" data-page="greetings" title="Greetings"><span class="nav-icon">✦</span><span>Greetings</span></button>
         <button class="nav-item" data-page="leveling" title="Leveling"><span class="nav-icon">↗</span><span>Leveling</span></button>
         <button class="nav-item" data-page="logging" title="Logging"><span class="nav-icon">≡</span><span>Logging</span></button>
@@ -82,10 +82,10 @@
 
       <main id="dashboard-main" tabindex="-1">
         <section class="page" data-panel="ai-voice">
-          <article class="card"><p class="eyebrow">Beta experiment</p><h2>Talk with DexzuBot</h2>
-            <p>Join an allowed voice channel and use <strong>/aivoice start</strong>. Everyone with an allowed role in that channel can speak automatically, one question at a time. Pause for a reply; only the person being answered can interrupt it.</p>
+          <article class="card"><p class="eyebrow">Bot owner only</p><h2>Talk with DexzuBot</h2>
+            <p>Approved bot owners can join an allowed voice channel and use <strong>/aivoice start</strong> in any server with AI voice enabled. Only those accounts can speak to the AI or use its controls. Only the owner being answered can interrupt a reply.</p>
             <p>The owner’s PC must be awake with the local AI helper running. Speech is processed locally; recordings and conversation transcripts are not saved. No paid AI API is used.</p>
-            <p>A listening notice appears in the voice channel chat before capture starts. The host or an administrator can use <strong>/aivoice stop</strong>; leave the channel to stop participating. One session at a time; music and AI cannot share a server voice connection.</p>
+            <p>A channel notice appears before listening. Other members can hear replies and see sources, but their speech is ignored. An approved owner can use <strong>/aivoice stop</strong>, or the host can leave the channel to end the session. One session at a time; music and AI cannot share a server voice connection.</p>
           </article>
           <div id="ai-voice-controls" hidden>
             <article class="card ai-voice-session"><div><h2>Local helper &amp; session</h2><p id="ai-voice-helper" role="status">Checking local helper…</p><p id="ai-voice-session-state">No active session.</p></div><button id="ai-voice-stop" type="button" class="secondary-button" disabled>Stop session</button></article>
@@ -94,12 +94,12 @@
               <label class="ai-voice-toggle"><input id="ai-voice-research" type="checkbox" aria-describedby="ai-voice-research-help"> Research the web automatically when needed</label>
               <p id="ai-voice-research-help">Search queries are sent to public search providers. Answers stay short, with source links in the voice channel chat. Changing this option ends any active session; start a new one with /aivoice start.</p>
               <div class="ai-voice-grid">
-                <label for="ai-voice-roles">Allowed roles<select id="ai-voice-roles" multiple size="5" aria-describedby="ai-voice-roles-help"></select><small id="ai-voice-roles-help">Leave empty to allow any member with voice permissions. Use Ctrl or Command to select several.</small></label>
+                <label for="ai-voice-roles">Additional role restriction<select id="ai-voice-roles" multiple size="5" aria-describedby="ai-voice-roles-help"></select><small id="ai-voice-roles-help">Optional restriction for the approved bot owner. Selecting a role never grants AI access to other members. Use Ctrl or Command to select several.</small></label>
                 <label for="ai-voice-channels">Allowed voice channels<select id="ai-voice-channels" multiple size="5" aria-describedby="ai-voice-channels-help"></select><small id="ai-voice-channels-help">Leave empty to allow any ordinary voice channel.</small></label>
                 <label for="ai-voice-voice">Installed voice<select id="ai-voice-voice"></select></label>
                 <label for="ai-voice-limit">Maximum session length (seconds)<input id="ai-voice-limit" type="number" min="30" max="600" step="1" required><small>30–600 seconds. Sessions also end after 60 seconds without activity.</small></label>
               </div><button id="ai-voice-save" type="submit">Save settings</button>
-            </fieldset><p id="ai-voice-feedback" role="status" aria-live="polite">Available in Beta only.</p></form>
+            </fieldset><p id="ai-voice-feedback" role="status" aria-live="polite">Available only to the approved bot owner.</p></form>
           </div>
         </section>
         <section class="page active" data-panel="overview">

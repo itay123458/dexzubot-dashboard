@@ -8,7 +8,7 @@
   function render(result,renderForm){
     data=result;
     $('ai-voice-helper').textContent=result.helper.ready?'Local helper ready.':'Local helper unavailable. Start it on the owner’s PC.';
-    $('ai-voice-session-state').textContent=result.session.state==='idle'?'No active session.':`Session ${result.session.state}. ${result.session.speakerCount??1} people can participate.${result.session.answeringUserId?` Answering ${result.session.answeringName||'the current speaker'}.`:''}`;
+    $('ai-voice-session-state').textContent=result.session.state==='idle'?'No active session.':`Owner session ${result.session.state}. Only approved bot owners can speak.${result.session.answeringUserId?` Answering ${result.session.answeringName||'an owner'}.`:''}`;
     if(result.session.sourceNoticeFailed)$('ai-voice-session-state').textContent+=' Source links could not be posted. Check the voice channel permissions.';
     $('ai-voice-stop').disabled=result.session.state==='idle'||busy;
     if(!renderForm)return;
@@ -55,7 +55,7 @@
     finally{busy=false;void load(false);}
   });
   window.addEventListener('dexzu-state',event=>{
-    enabled=event.detail?.server?.aiVoiceBeta===true;
+    enabled=event.detail?.server?.aiVoiceOwner===true;
     $('ai-voice-nav').hidden=!enabled;$('ai-voice-controls').hidden=!enabled;
     if(!enabled){fields.disabled=true;stopPolling();}else if(visible&&!data)void load();
   });
