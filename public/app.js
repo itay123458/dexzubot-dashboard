@@ -30,6 +30,7 @@ window.addEventListener('pagehide', () => {
   activeSaveControls.forEach(restoreSaveFeedback);
 });
 const toast = (message, error = false, detail = '') => {
+  const toastStack=$('toasts'),stackPositions=window.DexzuMotion?.capture(toastStack);
   const type = typeof error === 'string' ? error : (error ? 'error' : 'success');
   const element = document.createElement('div');
   element.className = `toast ${type}`;
@@ -43,11 +44,14 @@ const toast = (message, error = false, detail = '') => {
   if (detail) { const description = document.createElement('small'); description.textContent = detail; copy.append(description); }
   const progress = document.createElement('i'); progress.className = 'toast-progress';
   element.append(icon, copy, close, progress); $('toasts').append(element);
+  window.DexzuMotion?.flip(toastStack,stackPositions);
   let leaving = false;
   const dismiss = () => {
     if (leaving) return;
     leaving = true; cancelFeedback(timer); element.classList.add('leaving');
-    feedbackLater(() => element.remove(), reducedMotion() ? 0 : 240);
+    const finish=()=>{const positions=window.DexzuMotion?.capture(toastStack);element.remove();window.DexzuMotion?.flip(toastStack,positions);};
+    const exit=window.DexzuMotion?.animate(element,[{opacity:1,translate:'0 0'},{opacity:0,translate:'0 6px'}],{duration:180});
+    if(exit)exit.finished.then(finish,finish);else finish();
   };
   close.onclick = dismiss;
   let remaining = 3800, started = performance.now();
@@ -210,8 +214,10 @@ const moduleDetails = {
 function bindModuleCommandControls(pageName, category) {
   const search = $('module-command-search');
   if (search) search.oninput = () => {
+    const list=document.querySelector('.module-access-list'),positions=window.DexzuMotion?.capture(list);
     const query = search.value.trim().toLowerCase();
     document.querySelectorAll('.module-access-row').forEach(row => { row.hidden = !row.textContent.toLowerCase().includes(query); });
+    window.DexzuMotion?.flip(list,positions);
   };
   document.querySelectorAll('[data-module-command]').forEach(toggle => { toggle.onchange = async () => {
     const enabled = toggle.checked; const command = toggle.dataset.moduleCommand; const row = toggle.closest('.module-access-row');
@@ -282,17 +288,27 @@ function renderModulePage(pageName) {
   };
 }
 
-function showPage(pageName) {
+let pageTransitionId = 0;
+let activeRoute = null;
+async function showPage(pageName, { historyMode = 'push' } = {}) {
   const selected = pageDetails[pageName] ? pageName : 'overview';
+  const transitionId = ++pageTransitionId;
+  if (activeRoute === selected) { window.DexzuMotion?.cancel(document.querySelector('[data-panel].active')); return; }
   const selectedPanel = selected.startsWith('module-') ? 'module' : selected;
   const currentPage = document.querySelector('[data-panel].active')?.dataset.panel;
   if (currentPage && currentPage !== selected && dirtyPages.has(currentPage)) {
-    if (!confirm('Discard unsaved changes?')) return;
+    if (!confirm('Discard unsaved changes?')) {
+      if (historyMode === 'none' && activeRoute) history.replaceState(null, '', `#${activeRoute}`);
+      return;
+    }
     dirtyPages.delete(currentPage);
     setDirty.sources?.delete(currentPage);
     window.dispatchEvent(new CustomEvent('dexzu-discard', { detail: currentPage }));
     if (state) render(state);
   }
+  const previousPanel = document.querySelector('[data-panel].active');
+  if (activeRoute) await window.DexzuMotion?.leave(previousPanel);
+  if (transitionId !== pageTransitionId) return;
   document.querySelectorAll('[data-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.panel === selectedPanel));
   document.querySelectorAll('[data-page]').forEach(button => button.classList.toggle('active', button.dataset.page === selected));
   requestAnimationFrame(updateNavIndicator);
@@ -303,9 +319,12 @@ function showPage(pageName) {
     else button.removeAttribute('aria-current');
   });
   $('page-description').textContent = pageDetails[selected][1];
-  history.replaceState(null, '', `#${selected}`);
+  if (!activeRoute || historyMode === 'replace') history.replaceState(null, '', `#${selected}`);
+  else if (historyMode !== 'none') history.pushState(null, '', `#${selected}`);
+  activeRoute = selected;
+  document.body.dataset.motionRoute = selected;
   renderModulePage(selected);
-  window.dispatchEvent(new CustomEvent('dexzu-page', { detail: { panel: document.querySelector(`[data-panel="${selectedPanel}"]`) } }));
+  window.dispatchEvent(new CustomEvent('dexzu-page', { detail: { route: selected, panel: document.querySelector(`[data-panel="${selectedPanel}"]`) } }));
   window.scrollTo({ top: 0, behavior: 'instant' });
   if (selected === 'youtube') void loadYouTubeLatest();
 }
@@ -347,10 +366,24 @@ function validateLeveling() {
 function renderLevelRewards() {
   const rewards = [...levelRewardDraft].sort((a, b) => a.level - b.level);
   $('level-reward-count').textContent = `${rewards.length} configured`;
-  $('level-reward-list').innerHTML = rewards.length ? rewards.map(reward => {
+  const list=$('level-reward-list'),positions=window.DexzuMotion?.capture(list);
+  const existing=new Map([...list.querySelectorAll('[data-reward-key]')].map(row=>[row.dataset.rewardKey,row]));
+  if(rewards.length)list.querySelector('.level-reward-empty')?.remove();
+  const keep=new Set();
+  rewards.forEach((reward,index) => {
+    const key=String(reward.level);keep.add(key);
+    let row=existing.get(key);
+    if(!row){row=document.createElement('div');row.className='level-reward-row';row.dataset.rewardKey=key;row.innerHTML='<span></span><strong><i class="role-color"></i><span></span></strong><button type="button">Remove</button>';}
     const role = state.roles.find(item => item.id === reward.roleId);
-    return `<div class="level-reward-row"><span>Level ${reward.level}</span><strong><i class="role-color" style="color:${escapeHtml(role?.color || '#99aab5')};background:${escapeHtml(role?.color || '#99aab5')}"></i>${escapeHtml(role?.name || 'Missing role')}</strong><button type="button" data-remove-level-reward="${reward.level}">Remove</button></div>`;
-  }).join('') : '<div class="level-reward-empty">No level roles configured yet.</div>';
+    row.firstElementChild.textContent=`Level ${reward.level}`;
+    row.querySelector('strong span').textContent=role?.name || 'Missing role';
+    row.querySelector('i').style.color=role?.color || '#99aab5';row.querySelector('i').style.backgroundColor=role?.color || '#99aab5';
+    row.querySelector('button').dataset.removeLevelReward=key;
+    if(list.children[index]!==row)list.insertBefore(row,list.children[index]||null);
+  });
+  existing.forEach((row,key)=>{if(!keep.has(key))row.remove();});
+  if(!rewards.length && !list.querySelector('.level-reward-empty'))list.innerHTML='<div class="level-reward-empty">No level roles configured yet.</div>';
+  window.DexzuMotion?.flip(list,positions);
   document.querySelectorAll('[data-remove-level-reward]').forEach(button => { button.onclick = () => {
     levelRewardDraft = levelRewardDraft.filter(reward => reward.level !== Number(button.dataset.removeLevelReward));
     levelingRewardsDirty = true; setDirty('leveling', levelingSettingsDirty || levelingRewardsDirty); renderLevelRewards();
@@ -394,6 +427,7 @@ function renderRecentActivity() {
   }
   const activityIcons = { moderation: icons.shield, message: icons.command, member: icons.members, voice: icons.members, leveling: icons.trend, counting: icons.hash, role: icons.shield, channel: icons.hash, dashboard: icons.command, guild: icons.members, invite: icons.trend, emoji: icons.command, sticker: icons.ticket };
   const feed = $('recent-activity');
+  const previousPositions = window.DexzuMotion?.capture(feed);
   const existing = new Map([...feed.querySelectorAll('[data-activity-id]')].map(row => [row.dataset.activityId, row]));
   const anchor = [...existing.values()].find(row => row.getBoundingClientRect().bottom > 0);
   const anchorTop = anchor?.getBoundingClientRect().top;
@@ -420,6 +454,7 @@ function renderRecentActivity() {
   activityInitialized = true;
   feed.scrollTop = scrollTop;
   if (anchor?.isConnected && window.scrollY > 0) window.scrollBy(0, anchor.getBoundingClientRect().top - anchorTop);
+  window.DexzuMotion?.flip(feed, previousPositions);
   latestActivityId = null;
 
 }
@@ -463,7 +498,15 @@ async function refreshRecentActivity() {
 document.querySelectorAll('[data-page]').forEach(button => {
   button.onclick = () => showPage(button.dataset.page);
 });
-showPage(location.hash.slice(1));
+const initialDestination=location.hash.slice(1);
+const initialAnchor=!pageDetails[initialDestination] && document.getElementById(initialDestination);
+void showPage(initialDestination).then(()=>{
+  if(initialAnchor){history.replaceState(null,'',`#${initialDestination}`);initialAnchor.scrollIntoView({block:'start',behavior:'instant'});}
+});
+window.addEventListener('hashchange', () => {
+  const destination=location.hash.slice(1);
+  if(pageDetails[destination] || !destination)void showPage(destination, { historyMode: 'none' });
+});
 
 const setSidebarCollapsed = collapsed => {
   document.body.classList.toggle('sidebar-collapsed', collapsed);
@@ -641,7 +684,7 @@ function render(current) {
   bindControlEvents();
   updateYouTubeSummary();
   renderYouTubeLatest();
-  renderModulePage(location.hash.slice(1));
+  renderModulePage(activeRoute || location.hash.slice(1));
   for (const { panel, values } of drafts) for (const saved of values) {
     const input = saved.id ? $(saved.id) : [...panel.querySelectorAll('input')].find(item => item.dataset.group === saved.group && item.getAttribute('value') === saved.key);
     if (input) {
@@ -780,6 +823,7 @@ function initialLoadFailure(error) {
 async function load() {
   const initial = document.body.dataset.dashboardReady !== 'true';
   if (initial) {
+    $('dashboard-main').inert = true;
     $('dashboard-main').setAttribute('aria-busy', 'true');
     $('metrics').setAttribute('aria-busy', 'true');
     document.body.dataset.dashboardLoading = 'loading';
@@ -800,6 +844,7 @@ async function load() {
     throw error;
   } finally {
     if (initial) {
+      $('dashboard-main').inert = false;
       $('dashboard-main').setAttribute('aria-busy', 'false');
       $('metrics').setAttribute('aria-busy', 'false');
     }

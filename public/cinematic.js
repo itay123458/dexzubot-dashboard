@@ -25,7 +25,11 @@
   }
   function update() {
     frame = 0;
-    if (stopped || document.hidden || !story || story.closest('[hidden]')) return;
+    if (stopped || document.hidden) return;
+    const pageProgress=clamp(scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight));
+    document.documentElement.style.setProperty('--page-scroll',pageProgress.toFixed(4));
+    for(const [host,core] of cores)if(host.classList.contains('route-core') || host.classList.contains('dashboard-core'))core?.setProgress(pageProgress);
+    if (!story || story.closest('[hidden]')) return;
     const bounds = journey.getBoundingClientRect();
     const progress = staticLayout() ? 0 : clamp((90 - bounds.top) / Math.max(1, bounds.height - innerHeight * .7));
     story.style.setProperty('--story-progress', progress.toFixed(4));
@@ -85,11 +89,18 @@
         story.classList.add('story-first-visit'); sessionStorage.setItem('dexzu.story.seen.v1', '1');
       }
     } catch { /* Content remains visible when storage is unavailable. */ }
-    buttons.forEach((button, index) => button.addEventListener('click', () => selectStep(index)));
+    buttons.forEach((button, index) => button.addEventListener('click', () => {
+      if(staticLayout()){selectStep(index);return;}
+      const distance=Math.max(1,feature.offsetHeight-innerHeight*.8);
+      const top=scrollY+feature.getBoundingClientRect().top-innerHeight*.08+(index+.15)/3*distance;
+      window.scrollTo({top,behavior:'smooth'});
+    }));
     demos.forEach(demo => { demo.addEventListener('pointermove', onPointer); demo.addEventListener('pointerleave', resetPointer); });
   }
   window.addEventListener('scroll', schedule, { passive: true });
   window.addEventListener('resize', schedule, { passive: true });
+  window.addEventListener('dexzu-page',schedule);
+  window.addEventListener('dexzu-data-ready',schedule);
   document.addEventListener('visibilitychange', schedule);
   reduced.addEventListener('change', preferenceChanged);
   short.addEventListener('change', schedule);

@@ -30,11 +30,12 @@
     if (document.body.classList.contains('navigation-open') && !menuClosing) { closeMenu(true); return; }
     menuClosing = false; menuAnimation?.cancel(); menuAnimation = null;
     document.body.classList.add('navigation-open'); menu.setAttribute('aria-expanded', 'true');
+    window.DexzuMotion?.animate(navigation, [{opacity:0,translate:'0 -8px'},{opacity:1,translate:'0 0'}], {duration:220});
     navigation.querySelector('.active')?.focus();
   });
   navigation.addEventListener('click', event => {
     const button = event.target.closest('[data-page]');
-    if (!button?.classList.contains('active')) return;
+    if (!button || !navigation.contains(button)) return;
     markCurrent();
     if (mobile.matches) { closeMenu(); document.getElementById('dashboard-main').focus({ preventScroll: true }); }
   });

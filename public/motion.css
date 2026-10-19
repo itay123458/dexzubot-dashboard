@@ -1,13 +1,15 @@
 /* Shared motion layer. Load last; geometry and focusable hit areas stay stable. */
 :root {
-  --motion-interaction: 150ms;
-  --motion-panel: 240ms;
+  --motion-interaction: 180ms;
+  --motion-panel: 280ms;
   --motion-entrance: 400ms;
   --motion-count: 450ms;
   --motion-stagger: 50ms;
   --motion-ease: cubic-bezier(.2, .7, .25, 1);
   --motion-settle: cubic-bezier(.16, 1, .3, 1);
-  --motion-distance: 10px;
+  --motion-distance: 16px;
+  --motion-accent: #ffab66;
+  --motion-highlight: #c3a0f0;
   --ease: var(--motion-interaction) var(--motion-ease);
 }
 
@@ -23,8 +25,8 @@ body .motion-enter {
 body .sidebar.control-header.motion-enter { animation-name: motion-header-enter; }
 @keyframes motion-header-enter { from { opacity: 0; } to { opacity: 1; } }
 @keyframes motion-enter {
-  from { opacity: 0; transform: translate3d(0, var(--motion-distance), 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
+  from { opacity: 0; translate: 0 var(--motion-distance); }
+  to { opacity: 1; translate: 0 0; }
 }
 body .activity-row.activity-new {
   animation: motion-activity-in var(--motion-panel) var(--motion-settle);
@@ -312,6 +314,57 @@ body .toast {
 }
 body .toast.leaving { animation: none; opacity: 0; transform: translateY(6px); }
 @keyframes motion-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* One motion owner per property: entrance uses translate, hover uses transform.
+   Forms and tables never tilt; only the explicitly selected previews do. */
+.topbar { position:relative; isolation:isolate; }
+body .topbar,body .sidebar {animation:motion-header-enter 300ms ease-out}
+.route-core { position:absolute; width:84px; height:84px; inset-inline-end:240px; top:8px; opacity:.7; pointer-events:none; z-index:-1; }
+.route-core .core-fallback { opacity:1; }
+body .motion-enter { will-change:auto; }
+body .page.active { perspective:1200px; }
+body .card { transition:border-color var(--motion-interaction) ease,box-shadow var(--motion-panel) ease; }
+body [data-motion-tilt] { transform:perspective(1000px) rotateX(var(--surface-x,0deg)) rotateY(var(--surface-y,0deg));transition:transform 220ms var(--motion-settle),border-color 180ms ease,box-shadow 280ms ease; }
+body .card:focus-within { border-color:var(--motion-highlight); }
+body button:not(.nav-item):hover:not(:disabled),body .metric:hover,body .summary-grid>:hover { border-color:var(--motion-accent); }
+body .metric:hover .metric-icon,body .summary-grid>:hover .summary-icon,body .text-link:hover {color:var(--motion-accent)}
+body :is(button,a,input,select,textarea,summary):focus-visible {outline-color:var(--motion-highlight)}
+body input:not([type=checkbox]):focus,body select:focus,body textarea:focus {border-color:var(--motion-highlight);box-shadow:0 0 0 3px #c3a0f016}
+body .dashboard-nav #nav-active-indicator {border-color:#705039;background:#392a24;box-shadow:inset 0 1px #ffab6610;transition:transform 280ms var(--motion-settle),width 180ms ease,height 180ms ease,opacity 180ms ease}
+body .dashboard-nav #nav-active-indicator::after {display:none}
+body .dashboard-nav .nav-item:focus-visible {outline-offset:-2px}
+body #control-search-results button:hover,body #control-search-results button:focus-visible {background-color:#392a24;border-color:#705039}
+body::after {background:radial-gradient(ellipse at 76% 15%,#c3a0f010,transparent 48%),radial-gradient(ellipse at 25% 70%,#ffab6607,transparent 42%);pointer-events:none;z-index:-1}
+.bot-banner::before,.youtube-control .youtube-hero::before {background:radial-gradient(ellipse at 76% 42%,#ffab6618,transparent 56%)}
+body .skeleton,body .skeleton-line,body .youtube-loading {background-image:linear-gradient(105deg,transparent 25%,#c3a0f015 45%,transparent 65%);background-size:240% 100%;animation:motion-skeleton 1.5s linear infinite}
+@keyframes motion-skeleton {from{background-position:120% 0}to{background-position:-120% 0}}
+body[data-dashboard-loading="loading"] .topbar .route-core {animation:motion-loader 1.2s ease-in-out infinite alternate}
+@keyframes motion-loader {from{opacity:.35;scale:.94}to{opacity:1;scale:1}}
+body[data-dashboard-loading="loading"] .page:not([data-panel="overview"]) .card {position:relative;min-height:160px}
+body[data-dashboard-loading="loading"] .page:not([data-panel="overview"]) .card>:not(.card-head) {visibility:hidden}
+body[data-dashboard-loading="loading"] .page:not([data-panel="overview"]) .card::after {content:"";position:absolute;inset:76px 24px 22px;pointer-events:none;border-radius:6px;background:repeating-linear-gradient(180deg,#c3a0f010 0 14px,transparent 14px 32px);animation:motion-loading-opacity 1.4s ease-in-out infinite alternate}
+body details::details-content {transition:none;block-size:auto;content-visibility:visible}
+body details:not([open])::details-content {content-visibility:hidden}
+body details[open]>:not(summary) {animation:none}
+body .empty-state:not(.motion-enter) {animation:none}
+body .dashboard-load-error {animation:motion-activity-in 280ms var(--motion-settle)}
+body dialog[open].motion-closing {animation:none}
+body .toast.leaving {transform:none;transition:none}
+body .feature-heading.motion-enter h2 {animation:motion-heading-mask 400ms var(--motion-settle) both}
+@keyframes motion-heading-mask {from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}
+body .motion-enter .preview-media img {animation:motion-image-mask 450ms var(--motion-settle) both}
+@keyframes motion-image-mask {from{clip-path:inset(8% 0 8% 0);opacity:.5}to{clip-path:inset(0);opacity:1}}
+body .switch input:focus-visible+span {outline:2px solid var(--motion-highlight);outline-offset:4px}
+body button[aria-busy="true"]:not(.nav-item):not(.icon-button):not(.mobile-navigation) {border-color:var(--motion-accent)}
+body button[aria-busy="true"]:not(.nav-item):not(.icon-button):not(.mobile-navigation)::after {border-color:#705039;border-top-color:var(--motion-accent);border-right-color:var(--motion-highlight);background:#201e28}
+body input[type="checkbox"] {accent-color:var(--motion-accent);transition:box-shadow 180ms ease}
+body .module-progress b {transition:width 350ms var(--motion-settle)}
+.route-core::after {content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#c3a0f00b,transparent 65%);pointer-events:none}
+@media(hover:hover) and (pointer:fine){body .card:hover {border-color:#64516b;box-shadow:0 12px 32px #0002}body .metric:hover,body .summary-grid>:hover{transform:translateY(-3px)}body .card[data-motion-tilt]:hover{box-shadow:0 14px 34px #0003}}
+@media(min-width:761px){body .workspace{transition:margin-inline-start 280ms var(--motion-settle),margin-left 280ms var(--motion-settle)}body .sidebar{transition:width 280ms var(--motion-settle)} }
+@media(max-width:1000px){.route-core{inset-inline-end:185px;width:64px;height:64px}}
+@media(max-width:760px){.route-core{display:none}body.navigation-open .dashboard-nav{animation:none}body .dashboard-nav .nav-item:active{background:#392a24}body .card:hover{box-shadow:none}body [data-motion-tilt]{transform:none}}
+@media(prefers-reduced-motion:reduce){body [data-motion-tilt]{transform:none!important}body .motion-enter{translate:none!important}body .route-core{animation:none} }
 
 /* Hidden tabs do not spend work on decorative or loading animations. */
 .motion-paused body::after, body.motion-paused::after,

@@ -236,7 +236,7 @@ export function mountCore(host) {
     // Expand the field of view on narrow hosts so satellites remain within frame.
     const fitted = Math.min(1, aspect / 1.05);
     gl.uniformMatrix4fv(locations.projection, false, new Float32Array([f / aspect * fitted, 0, 0, 0, 0, f * fitted, 0, 0, 0, 0, -1.004, -1, 0, 0, -0.2004, 0]));
-    gl.uniformMatrix4fv(locations.model, false, modelMatrix(0.10 + Math.sin(elapsed * 0.23) * 0.035, -0.19 + Math.sin(elapsed * 0.21) * 0.21 + progress * 0.28, Math.sin(elapsed * 0.74) * 0.055));
+    gl.uniformMatrix4fv(locations.model, false, modelMatrix(0.10 + progress * 0.18 + Math.sin(elapsed * 0.23) * 0.035, -0.19 + Math.sin(elapsed * 0.21) * 0.21 + progress * 0.9, Math.sin(elapsed * 0.74) * 0.055 + progress * 0.1));
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
