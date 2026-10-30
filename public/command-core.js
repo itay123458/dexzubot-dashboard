@@ -29,18 +29,18 @@ varying float vGlow;
 void main() {
   vec3 normal = normalize(vNormal);
   float key = max(dot(normal, normalize(vec3(-0.7, 0.9, 1.3))), 0.0);
-  float violet = max(dot(normal, normalize(vec3(1.0, 0.2, -0.9))), 0.0);
+  float cyan = max(dot(normal, normalize(vec3(1.0, 0.2, -0.9))), 0.0);
   float rim = pow(1.0 - max(dot(normal, normalize(vec3(0.0, 0.0, 5.5) - vPosition)), 0.0), 3.0);
   vec3 lit = vColor.rgb * (0.28 + key * 0.94);
-  lit += vec3(0.20, 0.055, 0.35) * violet + vec3(0.48, 0.18, 0.07) * rim;
+  lit += vec3(0.04, 0.18, 0.32) * cyan + vec3(0.06, 0.28, 0.42) * rim;
   gl_FragColor = vec4(mix(lit, vColor.rgb * 1.18, vGlow), vColor.a);
 }`;
 
 const TAU = Math.PI * 2;
-const amber = [1, 0.36, 0.075, 1];
-const violet = [0.40, 0.18, 0.67, 1];
-const gold = [1, 0.72, 0.29, 1];
-const cream = [1, 0.86, 0.58, 1];
+const blue = [0.20, 0.55, 1, 1];
+const cyan = [0.12, 0.72, 0.85, 1];
+const ice = [0.38, 0.86, 0.95, 1];
+const white = [0.82, 0.94, 1, 1];
 
 function normalOf(a, b, c) {
   const u = b.map((value, i) => value - a[i]);
@@ -61,13 +61,13 @@ function makeScene() {
     triangle(a, b, c, color, emission, target);
     triangle(a, c, d, color, emission, target);
   }
-  // Hand-built, flat-shaded lobes. Alternating rib depths catch the key light.
+  // Faceted command sphere with cool highlights.
   const rings = 10;
   const sides = 24;
   function point(ring, side) {
     const latitude = Math.PI * ring / rings;
     const angle = TAU * side / sides;
-    const rib = 1 + 0.09 * Math.cos(angle * 8);
+    const rib = 1;
     const radius = Math.sin(latitude) * 1.15 * rib;
     return [Math.cos(angle) * radius, Math.cos(latitude) * 0.96, Math.sin(angle) * radius];
   }
@@ -75,12 +75,12 @@ function makeScene() {
     for (let i = 0; i < sides; i++) {
       const shadowRib = i % 3 === 1;
       const shade = 0.73 + (j % 3) * 0.10;
-      const color = shadowRib ? [0.48, 0.16, 0.10, 1] : [amber[0] * shade, amber[1] * shade, amber[2] * shade, 1];
+      const color = shadowRib ? [0.08, 0.22, 0.40, 1] : [blue[0] * shade, blue[1] * shade, blue[2] * shade, 1];
       const a = point(j, i), b = point(j + 1, i), c = point(j + 1, i + 1), d = point(j, i + 1);
       quad(a, d, c, b, color);
     }
   }
-  // Violet inset cap and an open crown with five sharp, asymmetrical tips.
+  // Cyan inset cap and an open crown with five sharp, asymmetrical tips.
   const crownCount = 10;
   for (let i = 0; i < crownCount; i++) {
     const a = TAU * i / crownCount;
@@ -91,16 +91,16 @@ function makeScene() {
     const lowerB = [Math.cos(b) * 0.42, 0.86, Math.sin(b) * 0.42];
     const upperA = [Math.cos(a) * 0.53, tip, Math.sin(a) * 0.53];
     const upperB = [Math.cos(b) * 0.53, nextTip, Math.sin(b) * 0.53];
-    quad(lowerA, upperA, upperB, lowerB, i % 2 ? violet : [0.66, 0.32, 0.80, 1]);
-    // A narrow golden lower band makes the crown readable against the body.
-    quad(lowerA, [lowerA[0], 0.96, lowerA[2]], [lowerB[0], 0.96, lowerB[2]], lowerB, gold, 0.35);
+    quad(lowerA, upperA, upperB, lowerB, i % 2 ? cyan : [0.66, 0.32, 0.80, 1]);
+    // A narrow cyan lower band makes the crown readable against the body.
+    quad(lowerA, [lowerA[0], 0.96, lowerA[2]], [lowerB[0], 0.96, lowerB[2]], lowerB, ice, 0.35);
   }
-  // Raised, beveled command plate; its forward face is a dark violet hexagon.
+  // Raised, beveled command plate; its forward face is a dark cyan hexagon.
   const plate = [[-0.64, 0.19], [-0.43, 0.49], [0.43, 0.49], [0.64, 0.19], [0.43, -0.46], [-0.43, -0.46]];
   for (let i = 0; i < plate.length; i++) {
     const p = plate[i], q = plate[(i + 1) % plate.length];
-    triangle([0, 0, 1.31], [...q, 1.31], [...p, 1.31], [0.095, 0.055, 0.17, 1]);
-    quad([...p, 1.31], [p[0] * 1.08, p[1] * 1.08, 1.26], [q[0] * 1.08, q[1] * 1.08, 1.26], [...q, 1.31], gold, 0.35);
+    triangle([0, 0, 1.31], [...q, 1.31], [...p, 1.31], [0.035, 0.08, 0.15, 1]);
+    quad([...p, 1.31], [p[0] * 1.08, p[1] * 1.08, 1.26], [q[0] * 1.08, q[1] * 1.08, 1.26], [...q, 1.31], ice, 0.35);
   }
   function stroke(points, width, color, z = 1.325, emission = 1) {
     for (let i = 1; i < points.length; i++) {
@@ -111,9 +111,9 @@ function makeScene() {
       quad([a[0] + x, a[1] + y, z], [a[0] - x, a[1] - y, z], [b[0] - x, b[1] - y, z], [b[0] + x, b[1] + y, z], color, emission);
     }
   }
-  stroke([[-0.24, 0.21], [-0.43, 0.025], [-0.24, -0.16]], 0.055, cream);
-  stroke([[0.24, 0.21], [0.43, 0.025], [0.24, -0.16]], 0.055, cream);
-  stroke([[0.095, 0.26], [-0.095, -0.22]], 0.055, amber);
+  stroke([[-0.24, 0.21], [-0.43, 0.025], [-0.24, -0.16]], 0.055, white);
+  stroke([[0.24, 0.21], [0.43, 0.025], [0.24, -0.16]], 0.055, white);
+  stroke([[0.095, 0.26], [-0.095, -0.22]], 0.055, blue);
   // Orbit rings are actual tilted geometry, with depth occlusion behind the core.
   function ring(radius, width, height, tilt, color, start = 0, end = TAU) {
     const segments = Math.ceil((end - start) * 22);
@@ -127,11 +127,11 @@ function makeScene() {
       quad(p(a, radius - width), p(a, radius + width), p(b, radius + width), p(b, radius - width), color, 1, glow);
     }
   }
-  ring(1.78, 0.009, -0.16, 0.42, [0.98, 0.49, 0.15, 0.65]);
-  ring(1.85, 0.0035, -0.16, 0.42, [0.76, 0.39, 1, 0.4]);
-  ring(1.62, 0.024, -0.15, 0.42, [1, 0.66, 0.28, 0.9], 3.55, 4.75);
-  ring(1.40, 0.009, -1.32, 0, [0.65, 0.28, 0.94, 0.65]);
-  ring(1.13, 0.016, -1.32, 0, [0.85, 0.37, 1, 0.3]);
+  ring(1.78, 0.009, -0.16, 0.42, [0.25, 0.65, 1, 0.65]);
+  ring(1.85, 0.0035, -0.16, 0.42, [0.25, 0.85, 1, 0.4]);
+  ring(1.62, 0.024, -0.15, 0.42, [0.38, 0.86, 0.95, 0.9], 3.55, 4.75);
+  ring(1.40, 0.009, -1.32, 0, [0.16, 0.58, 0.94, 0.65]);
+  ring(1.13, 0.016, -1.32, 0, [0.25, 0.85, 1, 0.3]);
   // Satellite crystals echo the crown facets without borrowing any brand asset.
   for (let i = 0; i < 7; i++) {
     const angle = i * TAU / 7 + 0.15;
@@ -141,8 +141,8 @@ function makeScene() {
     const size = i % 3 === 0 ? 0.13 : 0.075;
     const center = [[x - size, y, z], [x, y, z + size], [x + size, y, z], [x, y, z - size]];
     for (let j = 0; j < 4; j++) {
-      triangle([x, y + size * 1.9, z], center[j], center[(j + 1) % 4], i % 2 ? violet : gold, 0.18);
-      triangle([x, y - size * 1.9, z], center[(j + 1) % 4], center[j], i % 2 ? violet : amber, 0.18);
+      triangle([x, y + size * 1.9, z], center[j], center[(j + 1) % 4], i % 2 ? cyan : ice, 0.18);
+      triangle([x, y - size * 1.9, z], center[(j + 1) % 4], center[j], i % 2 ? cyan : blue, 0.18);
     }
   }
   return { solid: new Float32Array(solid), glow: new Float32Array(glow) };

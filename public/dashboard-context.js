@@ -67,9 +67,8 @@ async function loadDashboardGuilds() {
       document.body.dataset.guildId = selected.id;
       const preview = selected.serverUpdateEnabled === true;
       // Dashboard presentation is released everywhere; backend feature gates stay independent.
-      document.getElementById('halloween-theme').media = 'all';
-      document.querySelector('.halloween-brand').hidden = false;
-      document.querySelector('.regular-brand').hidden = true;
+      document.getElementById('dashboard-theme').media = 'all';
+      document.querySelector('.regular-brand').hidden = false;
       document.querySelector('.server-select-label').hidden = !(selected.multiServerEnabled === true || preview);
     } else { serverSelector.selectedIndex = -1; }
     serverSelector.disabled = !dashboardGuilds.length;
