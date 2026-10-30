@@ -1,4 +1,4 @@
-﻿/* Seasonal styling is loaded after feature styles. Status colors keep their meaning. */
+ï»¿/* Seasonal styling is loaded after feature styles. Status colors keep their meaning. */
 :root {
   --bg: #101722; --surface: #172131; --surface-2: #202e42;
   --text: #eef5ff; --muted: #aebed2; --line: #304159;
@@ -20,7 +20,7 @@ body::before {
 .season-label svg { flex:none; }
 .nav-label,.sidebar-footer small,.breadcrumb,.metric small { color: var(--muted); }
 .nav-item { color: var(--muted); }
-.nav-item:hover { background:#33233c; color:var(--text); }
+.nav-item:hover { background:#202e42; color:var(--text); }
 .nav-item.active { color:#d8ecff; background:#193753; border-color:#785033; }
 .nav-item.active::before { background:var(--brand-blue); box-shadow:none; }
 .nav-icon { color:var(--brand-cyan); background:#61dce812; }
@@ -42,7 +42,7 @@ button.secondary-button,button.icon-button,.collapse-button {
 button:hover:not(:disabled) { filter:brightness(1.08); }
 button:disabled { opacity:.55; cursor:not-allowed; }
 input:not([type="checkbox"]):not([type="radio"]),select,textarea {
-  color:var(--text); background:#19131f; border-color:var(--line);
+  color:var(--text); background:#101a29; border-color:var(--line);
 }
 input::placeholder,textarea::placeholder { color:#b4a3bd; }
 input:hover,select:hover,textarea:hover { background:#202e42; }
@@ -86,13 +86,13 @@ body .secondary-button,body .icon-button,body .collapse-button {
 }
 body .secondary-button:hover:not(:disabled),body .icon-button:hover:not(:disabled) { background:#3a2a46!important; }
 body .dashboard-nav { background:#172131ed; border-color:#6a4d75; }
-body .dashboard-nav .nav-item { background:#302339; border-color:#50385d; color:var(--brand-cyan); }
+body .dashboard-nav .nav-item { background:#202e42; border-color:#50385d; color:var(--brand-cyan); }
 body .dashboard-nav .nav-item.active { background:#193753; border-color:var(--brand-blue); color:var(--brand-blue); box-shadow:none; }
-body .dashboard-nav .nav-item:hover { background:#44304d; border-color:var(--brand-cyan); }
+body .dashboard-nav .nav-item:hover { background:#263b54; border-color:var(--brand-cyan); }
 body .nav-icon { color:inherit; }
 body .card .eyebrow,body .youtube-brand .eyebrow { color:var(--brand-blue); }
 body .youtube-summary span,body .field-label { color:var(--muted); }
-body select,body .channel-select select { background:#19131f; border-color:var(--line); color:var(--text); }
+body select,body .channel-select select { background:#101a29; border-color:var(--line); color:var(--text); }
 body .preview-media { background:#261c30; }
 body .topbar { gap:24px; }
 body .server-control { gap:10px; }
