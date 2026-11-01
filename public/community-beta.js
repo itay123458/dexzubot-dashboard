@@ -50,7 +50,7 @@
   function addActions(fieldset, key, build) {
     const actions = el('div', undefined, { class: 'community-actions' });
     actions.append(el('button', 'Save settings', { type: 'submit', class: 'primary' }));
-    if (names[key]) {
+    if (names[key] && !(key === 'inviteRewards' && data.config.invitePerks?.enabled)) {
       const publish = el('button', key === 'activity' ? 'Publish activity panel' : 'Publish panel', { type: 'button' });
       publish.addEventListener('click', () => {
         if (drafts.has(key) || drafts.has('shared')) { status('Save or discard settings for this panel and staff access before publishing.', true); return; }
@@ -84,7 +84,13 @@
         if (key === 'ticketCategories') fieldset.append(el('p', 'Uses the Tickets module’s panel channel, category and support role. Buttons: General support, Report a member and Partnership.'));
         if (key === 'inviteRewards') {
           fieldset.append(el('p', 'One milestone per line: invites:coins. Rewards require retained, attributed joins; ambiguous joins do not count.'));
-          const milestones = field(fieldset, 'milestones', 'Reward milestones (1–10)', 'textarea', config.milestones.map(m => `${m.invites}:${m.coins}`).join('\n')); milestones.required = true;
+          const milestones = field(fieldset, 'milestones', 'Coin milestones (used in coin mode)', 'textarea', config.milestones.map(m => `${m.invites}:${m.coins}`).join('\n')); milestones.required = true;
+          const perks=config.invitePerks || {enabled:false,roleId:null,requiredInvites:5,manualRewards:[]};
+          field(fieldset,'perksEnabled','Use plain-text role perks instead of future coin rewards','checkbox',perks.enabled);
+          field(fieldset,'perkRoleId','Automatic reward role','select',perks.roleId,data.roles);
+          const threshold=field(fieldset,'perkRequiredInvites','Qualified invites for the role','number',perks.requiredInvites);threshold.min='1';threshold.max='10000';threshold.required=true;
+          field(fieldset,'manualRewards','Staff-handled milestones (invites:description, one per line)','textarea',perks.manualRewards.map(reward=>`${reward.invites}:${reward.label}`).join('\n'));
+          fieldset.append(el('p','Role perks preserve earned coins and invite history. Use /invite-rewards balance or /invite-rewards claim; no panel is needed. The bot checks matured invites every 5 minutes. Staff handle the listed non-role perks.'));
           const age = field(fieldset, 'minAccountDays', 'Minimum account age (days)', 'number', config.minAccountDays); age.min = '0'; age.max = '365'; age.required = true;
           const stay = field(fieldset, 'minimumStayHours', 'Minimum membership (hours)', 'number', config.minimumStayHours); stay.min = '0'; stay.max = '720'; stay.required = true;
         }
@@ -105,6 +111,11 @@
             if (lines.length > 10 || lines.some(line => !/^\s*\d+\s*:\s*\d+\s*$/.test(line))) throw new Error('Enter 1–10 milestones using invites:coins, one per line.');
             patch.milestones = lines.map(line => { const [invites, coins] = line.split(':').map(Number); return { invites, coins }; });
             patch.minAccountDays = Number(val(f, 'minAccountDays')); patch.minimumStayHours = Number(val(f, 'minimumStayHours'));
+            const manualLines=val(f,'manualRewards').trim().split('\n').filter(Boolean);
+            if(manualLines.length>10 || manualLines.some(line=>!/^\s*\d+\s*:\s*\S.{0,199}$/.test(line)))throw new Error('Enter up to 10 staff milestones using invites:description.');
+            patch.invitePerks={enabled:checked(f,'perksEnabled'),roleId:val(f,'perkRoleId') || null,requiredInvites:Number(val(f,'perkRequiredInvites')),
+              manualRewards:manualLines.map(line=>{const split=line.indexOf(':');return {invites:Number(line.slice(0,split)),label:line.slice(split+1).trim()};})};
+            if(patch.invitePerks.enabled && !patch.invitePerks.roleId)throw new Error('Choose the automatic reward role.');
           }
           if (key === 'applications') patch.applicationUrl = val(f, 'applicationUrl') || null;
           if (key === 'applications') patch.questions = val(f, 'questions').trim().split('\n').map(line => ({ label: line.replace(/^\?\s*/, '').trim(), required: !line.startsWith('?') }));
