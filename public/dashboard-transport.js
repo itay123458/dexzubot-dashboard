@@ -11,7 +11,13 @@
   const tokenKey = 'dexzu.pages.session.v1', verifierKey = 'dexzu.pages.verifier.v1';
   const gate = document.getElementById('pages-signin');
   const status = document.getElementById('pages-signin-status');
-  const button = document.getElementById('pages-signin-button');
+  const buttons = [...document.querySelectorAll('[data-discord-signin]')];
+  const statuses = [status, document.getElementById('pages-signin-footer-status')].filter(Boolean);
+  const showStatus = message => statuses.forEach(element => { element.textContent = message; });
+  const setConnecting = connecting => buttons.forEach(button => {
+    button.disabled = connecting;
+    button.setAttribute('aria-busy', String(connecting));
+  });
   let token = null, signedOut = false;
   let readyResolve;
   const ready = new Promise(resolve => { readyResolve = resolve; });
@@ -26,8 +32,9 @@
   };
   const direct = (path, options = {}) => originalFetch(backend + path, { ...options, credentials: 'omit', cache: 'no-store', signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000) });
   const encoded = bytes => btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-  button.addEventListener('click', async () => {
-    button.disabled = true; status.textContent = 'Connecting to Discord\u2026';
+  const beginSignIn = async () => {
+    if (buttons.some(button => button.disabled)) return;
+    setConnecting(true); showStatus('Connecting to Discord\u2026');
     try {
       const verifier = encoded(crypto.getRandomValues(new Uint8Array(32)));
       sessionStorage.setItem(verifierKey, verifier);
@@ -35,8 +42,32 @@
       const target = new URL(backend + 'auth/login');
       target.searchParams.set('pages', '1'); target.searchParams.set('challenge', challenge);
       location.assign(target.href);
-    } catch { status.textContent = 'Allow storage for this site, then try signing in again.'; button.disabled = false; }
-  });
+    } catch { showStatus('Allow storage for this site, then try signing in again.'); setConnecting(false); }
+  };
+  buttons.forEach(button => button.addEventListener('click', beginSignIn));
+  async function loadDashboard() {
+    const styles = document.getElementById('dashboard-styles');
+    const scripts = document.getElementById('dashboard-scripts');
+    // Source/private hosting retains the ordinary document scripts and styles.
+    if (!styles || !scripts) return;
+    showStatus('Opening your dashboard\u2026'); setConnecting(true);
+    await Promise.all([...styles.content.querySelectorAll('link')].map(source => new Promise((resolve, reject) => {
+      const link = source.cloneNode(true);
+      if (link.rel === 'stylesheet') {
+        link.onload = resolve; link.onerror = () => reject(Error('Dashboard styles could not load. Refresh this page to try again.'));
+      } else resolve();
+      document.head.append(link);
+    })));
+    for (const source of scripts.content.querySelectorAll('script')) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = source.src; script.async = false;
+        script.onload = resolve;
+        script.onerror = () => reject(Error('Dashboard controls could not load. Refresh this page to try again.'));
+        document.body.append(script);
+      });
+    }
+  }
   window.fetch = async (input, options) => {
     const source = input instanceof Request ? input.url : String(input);
     const target = new URL(source, location.href);
@@ -99,8 +130,9 @@
         if (response.status === 401) clear();
         throw Error(response.status === 401 ? 'Your session ended. Sign in again.' : 'The bot is unavailable. Please try again shortly.');
       }
+      await loadDashboard();
       gate.hidden = true; document.body.classList.remove('pages-locked'); readyResolve();
-    } catch (error) { status.textContent = error.name === 'TypeError' || error.name === 'TimeoutError' ? 'Cannot reach DexzuBot right now. Please try again shortly.' : error.message; }
+    } catch (error) { showStatus(error.name === 'TypeError' || error.name === 'TimeoutError' ? 'Cannot reach DexzuBot right now. Please try again shortly.' : error.message); setConnecting(false); }
   }
   window.addEventListener('storage', event => {
     if ((event.key === tokenKey || event.key === null) && !signedOut && event.newValue !== token) {

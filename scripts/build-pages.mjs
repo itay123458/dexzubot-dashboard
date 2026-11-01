@@ -25,6 +25,22 @@ let html = await readFile(path.join(output, 'index.html'), 'utf8');
 html = html.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ${apiOrigin}; img-src 'self' data: https:; object-src 'none'; base-uri 'none'; form-action 'none'">\n  <meta name="referrer" content="no-referrer">\n  <link rel="stylesheet" href="${basePath}pages-signin.css">`);
 html = html.replace('<body>', `<body class="pages-locked">${gate}`);
 html = html.replace(`<script src="${basePath}dashboard-transport.js"`, `<script src="${basePath}pages-config.js" defer></script>\n  <script src="${basePath}dashboard-transport.js"`);
+// Inert templates preserve the authenticated cascade and classic-script order.
+// The public page needs only its own styles, story, configuration and transport.
+const dashboardStyles = [], dashboardScripts = [];
+html = html.replace(/<link\b[^>]+>/g, tag => {
+  if (/cinematic\.css/.test(tag)) dashboardStyles.push(tag);
+  if (/rel="(?:stylesheet|preload)"/.test(tag) && !/(?:pages-signin|cinematic)\.css/.test(tag)) { dashboardStyles.push(tag); return ''; }
+  return tag;
+});
+html = html.replace(/<script\b[^>]+src="([^"]+)"[^>]*><\/script>/g, (tag, src) => {
+  if (['cinematic.js','pages-config.js','dashboard-transport.js'].some(name => src.split('?')[0].endsWith('/' + name))) return tag;
+  dashboardScripts.push(tag); return '';
+});
+html = html.replace('</body>', `<template id="dashboard-styles">${dashboardStyles.join('\n')}</template>\n<template id="dashboard-scripts">${dashboardScripts.join('\n')}</template>\n</body>`);
+html = html.replace('<meta name="theme-color" content="#0c0d0f">', '<meta name="theme-color" content="#101722">');
+html = html.replace(`<link rel="stylesheet" href="${basePath}pages-signin.css">`, '');
+html = html.replace('</head>', `<link rel="stylesheet" href="${basePath}pages-signin.css">\n</head>`);
 await writeFile(path.join(output, 'pages-config.js'), `window.DexzuPagesConfig = Object.freeze(${JSON.stringify({ apiOrigin, basePath, siteOrigin })});\n`);
 // Stable URLs kept old scripts/styles in browser caches after a Pages release.
 // Hash the final built bytes, including generated files and rewritten paths.

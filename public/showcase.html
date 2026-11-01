@@ -1,17 +1,19 @@
-<section id="pages-signin" aria-labelledby="pages-signin-title">
+<section id="pages-signin" role="main" aria-labelledby="pages-signin-title">
+  <a class="story-skip-link" href="#story-intro">Skip to sign in</a>
   <div class="command-story" data-progress="0">
     <header class="story-header">
       <a class="story-brand" href="#story-intro" aria-label="DexzuBot introduction"><span class="core-mark" aria-hidden="true"><i></i><i></i><i></i></span>DEXZUBOT<span class="story-edition">CONTROL CENTER</span></a>
-      <a class="story-header-link" href="#story-features">Explore the controls <span aria-hidden="true">&#8599;</span></a>
+      <a class="story-header-link" href="#story-features">Explore the features <span aria-hidden="true">&#8599;</span></a>
     </header>
     <div class="story-journey">
-      <section class="story-hero" id="story-intro">
+      <section class="story-hero" id="story-intro" tabindex="-1">
         <p class="story-kicker">A LITTLE MAGIC. A LOT OF CONTROL.</p>
-        <h1 id="pages-signin-title"><span class="story-mask"><span>DexzuBot.</span></span><span class="story-mask"><span>Your server,</span></span><span class="story-mask"><span class="story-accent">brought to life.</span></span></h1>
-        <p class="story-intro-copy">Keep the good company. Lose the busywork.<br>One home for your community.</p>
-        <div class="story-actions"><button type="button" id="pages-signin-button">Continue with Discord <span aria-hidden="true">&#8599;</span></button><a href="#story-connect">Take a look <span aria-hidden="true">&#8595;</span></a></div>
+        <h1 id="pages-signin-title">Manage your Discord server <span class="story-accent">in one place.</span></h1>
+        <p class="story-intro-copy">Configure moderation, welcome messages, and review activity with DexzuBot’s control center.</p>
+        <div class="story-actions"><button type="button" id="pages-signin-button" data-discord-signin aria-describedby="story-access">Continue with Discord <span aria-hidden="true">&#8599;</span></button><a href="#story-features">Explore the features <span aria-hidden="true">&#8595;</span></a></div>
         <p id="pages-signin-status" role="status" aria-live="polite"></p>
-        <small class="story-access">Own a server with DexzuBot, or have Discord Administrator permission. Stay signed in for 30 days on this browser; sign out on shared devices.</small>
+        <p id="story-access" class="story-access">Choose a server where DexzuBot is installed and you are the owner or have Discord Administrator permission. <a href="#story-signin-help">How sign-in works</a></p>
+        <p class="story-session-note">Stay signed in for up to 30 days on this browser. Sign out on shared devices.</p>
         <p class="story-scroll-note"><span aria-hidden="true">&#8595;</span> SCROLL TO EXPLORE <span class="story-note-line"></span> YOUR COMMUNITY, CONNECTED</p>
       </section>
       <div class="story-world" aria-label="Illustration of the DexzuBot command core">
@@ -26,7 +28,8 @@
         <p class="story-kicker">01 / MAKE IT YOURS</p><h2 id="story-connect-title">A new home.<br>Your own rules.</h2>
         <p>Start with a clean slate. Choose what belongs in your server, then manage it in one place.</p>
         <div class="connection-illustration"><span class="sample-label">ILLUSTRATIVE SETUP</span><div class="sample-server"><span class="sample-server-avatar" aria-hidden="true">D</span><div><strong>Your community</strong><small>Example server</small></div><span class="sample-server-tag">YOUR SETTINGS</span></div><svg class="connection-line" viewBox="0 0 400 45" aria-hidden="true"><path d="M25 0v20q0 15 15 15h320q15 0 15-15V0" pathLength="1"/></svg><div class="sample-modules"><span>Moderation</span><span>Greetings</span><span>Leveling</span></div></div>
-        <ol class="connection-steps"><li><span>01</span><div><strong>Connect your server</strong><p>Sign in with Discord and select a server you manage.</p></div></li><li><span>02</span><div><strong>Choose your modules</strong><p>New servers start with optional modules off.</p></div></li><li><span>03</span><div><strong>Manage everything</strong><p>Set channels, review activity and make it yours.</p></div></li></ol>
+        <ol class="connection-steps"><li><span>01</span><div><strong>Choose your server</strong><p>Sign in with Discord and select an eligible server with DexzuBot installed.</p></div></li><li><span>02</span><div><strong>Choose your modules</strong><p>New servers start with optional modules off.</p></div></li><li><span>03</span><div><strong>Manage everything</strong><p>Set channels, review activity and make it yours.</p></div></li></ol>
+        <aside class="story-signin-help" id="story-signin-help" aria-labelledby="story-signin-help-title"><h3 id="story-signin-help-title">How sign-in works</h3><p>Discord asks permission to identify your account. DexzuBot uses your Discord ID and username to sign you in.</p><p>You can manage servers where DexzuBot is installed and you are currently a member with server ownership or Discord Administrator permission. DexzuBot checks that access for every server request.</p><p>Signing in does not add the bot to a server or request new server permissions.</p></aside>
       </section>
     </div>
     <section class="story-feature-story" id="story-features" aria-labelledby="story-features-title" data-step="0">
@@ -39,6 +42,6 @@
         </div>
       </div>
     </section>
-    <footer class="story-footer"><span class="core-mark" aria-hidden="true"><i></i><i></i><i></i></span><h2>Good company.<br>One connected community.</h2><a class="story-return" href="#story-intro">Back to sign in <span aria-hidden="true">&#8593;</span></a><p>DexzuBot &#183; Control center</p></footer>
+    <footer class="story-footer"><span class="core-mark" aria-hidden="true"><i></i><i></i><i></i></span><h2>Your server.<br>Ready when you are.</h2><div class="story-actions"><button type="button" id="pages-signin-footer-button" data-discord-signin aria-describedby="story-access">Continue with Discord <span aria-hidden="true">&#8599;</span></button><a class="story-return" href="#story-intro">Back to top <span aria-hidden="true">&#8593;</span></a></div><p id="pages-signin-footer-status" class="story-signin-status" role="status" aria-live="polite"></p><p>DexzuBot &#183; Control center</p></footer>
   </div>
 </section>
