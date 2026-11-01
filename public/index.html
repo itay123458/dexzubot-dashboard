@@ -70,7 +70,7 @@
 
     <div class="workspace">
       <header class="topbar">
-        <div><p class="breadcrumb">DexzuBot <span>/</span> <b id="breadcrumb-page">Overview</b></p><h1 id="page-title">Server overview</h1><p id="page-description">Your server at a glance.</p></div>
+        <div class="topbar-heading"><p class="breadcrumb">DexzuBot <span>/</span> <b id="breadcrumb-page">Overview</b></p><h1 id="page-title">Server overview</h1><p id="page-description">Your server at a glance.</p></div>
         <div class="workspace-context">
           <label class="server-select-label" for="server-selector">Server<select id="server-selector" disabled><option>Loading servers…</option></select></label>
           <nav class="workspace-switch" aria-label="Server workspace">
@@ -79,6 +79,7 @@
           </nav>
           <div class="server-chip"><img id="server-icon" alt="" width="32" height="32"><span><small id="workspace-label">Currently managing</small><strong id="server-name">Connecting…</strong></span><i id="server-status-dot"></i></div>
         </div>
+        <div class="overview-actions hero-actions"><button id="overview-modules-link" type="button">Manage commands</button><button class="secondary-button" type="button" data-open-page="operations">Server settings</button></div>
       </header>
       <aside id="dashboard-session" class="dashboard-session" hidden aria-label="Dashboard session"><span id="dashboard-session-label"></span><button id="dashboard-logout" type="button" class="secondary-button" hidden>Log out</button><span id="dashboard-session-status" role="status"></span></aside>
       <aside id="new-server-setup" class="workspace-notice" hidden><strong>Set up your server</strong><span>Features start off. Enable the modules you want below, then choose their channels, roles and settings. In Discord, use /configwizard or /commands to get started.</span></aside>
@@ -107,7 +108,6 @@
           </div>
         </section>
         <section class="page active" data-panel="overview">
-          <div class="overview-toolbar"><p>Manage this server.</p><div class="hero-actions"><button id="overview-modules-link" type="button">Manage commands</button><button class="secondary-button" type="button" data-open-page="operations">Server settings</button></div></div>
           <article class="bot-banner standard-hero" aria-label="Bot connection and runtime">
             <div class="hero-status-strip">
               <div class="bot-identity"><img id="hero-bot-avatar" alt="" width="36" height="36"><div><strong translate="no">DexzuBot</strong><p id="hero-connection">Connecting to your bot…</p></div></div>
@@ -116,8 +116,22 @@
           </article>
           <div id="dashboard-loading-status" class="dashboard-loading-status" role="status"><span class="core-mark core-assembling" aria-hidden="true"><i></i><i></i><i></i></span><span>Loading your server...</span></div><section class="metrics" id="metrics" aria-label="Server statistics" aria-busy="true"><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div><div class="metric skeleton" aria-hidden="true"></div></section>
           <div class="insight-grid">
-            <article class="card activity-card"><div class="card-head"><div><h2>Live activity</h2><p>Latest events from DexzuBot.</p></div><button id="view-logs" class="secondary-button">View all</button></div><div id="recent-activity" class="activity-feed"><div class="empty-state"><span class="empty-icon">≡</span><strong>No recent activity</strong><p>New DexzuBot events will appear here.</p></div></div></article>
-            <aside class="overview-rail"><article class="card status-card"><div class="card-head"><div><h2>System status</h2></div><button id="refresh-dashboard" class="icon-button" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button></div><div id="system-status" class="system-status"><div class="status-row skeleton-line"></div><div class="status-row skeleton-line"></div></div></article><details class="card performance-card"><summary>Server details</summary><div id="performance" class="performance-list"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></details></aside>
+            <div class="overview-primary">
+              <article class="card activity-card"><div class="card-head"><div><h2>Live activity</h2><p>Latest events from DexzuBot.</p></div><button id="view-logs" class="secondary-button">View all</button></div><div id="recent-activity" class="activity-feed"><div class="empty-state"><strong>No recent activity</strong><p>New DexzuBot events will appear here.</p></div></div><div class="activity-help"><button type="button" data-open-page="logging">Review logging <span aria-hidden="true">↗</span></button><button type="button" data-open-page="operations">Open diagnostics <span aria-hidden="true">↗</span></button></div></article>
+              <article id="overview-quick-actions" class="card overview-quick-actions" aria-labelledby="overview-actions-heading"><div class="card-head"><h2 id="overview-actions-heading">Quick actions</h2></div>
+                <button type="button" class="overview-action-row" data-open-page="greetings"><span class="overview-row-icon" data-overview-icon="members" aria-hidden="true"></span><span><strong>Welcome members</strong><small>Channels and message previews</small></span><span class="overview-chevron" aria-hidden="true">›</span></button>
+                <button type="button" class="overview-action-row" data-open-page="safety"><span class="overview-row-icon" data-overview-icon="shield" aria-hidden="true"></span><span><strong>Protect conversations</strong><small>Filters and mention limits</small></span><span class="overview-chevron" aria-hidden="true">›</span></button>
+                <button type="button" class="overview-action-row" data-open-page="operations"><span class="overview-row-icon" data-overview-icon="command" aria-hidden="true"></span><span><strong>Manage staff access</strong><small>Roles and diagnostics</small></span><span class="overview-chevron" aria-hidden="true">›</span></button>
+              </article>
+            </div>
+            <aside class="overview-rail">
+              <article class="card status-card"><div class="card-head"><div><h2>System status</h2><time id="overview-updated" class="overview-updated">Waiting for an update…</time></div><button id="refresh-dashboard" class="icon-button" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button></div><div id="system-status" class="system-status"><div class="status-row skeleton-line"></div><div class="status-row skeleton-line"></div></div><button id="overview-health-link" class="overview-health-link" type="button" data-open-page="operations"><span><strong id="overview-health-summary">Checking diagnostics…</strong><small id="overview-health-detail">Review your server's current checks.</small></span><span aria-hidden="true">›</span></button></article>
+              <article class="card overview-setup" aria-labelledby="overview-setup-heading"><div class="card-head"><h2 id="overview-setup-heading">Server setup</h2><span class="overview-optional">Optional features</span></div><div id="overview-setup-list">
+                <button type="button" class="overview-setup-row" data-setup-row="welcome" data-open-page="greetings"><span>Welcome messages</span><span id="overview-welcome-status" class="setup-state">Loading…</span><span class="overview-chevron" aria-hidden="true">›</span></button>
+                <button type="button" class="overview-setup-row" data-setup-row="logging" data-open-page="logging"><span>Event logging</span><span id="overview-logging-status" class="setup-state">Loading…</span><span class="overview-chevron" aria-hidden="true">›</span></button>
+                <button type="button" class="overview-setup-row" data-setup-row="spam" data-open-page="safety"><span>Spam protection</span><span id="overview-spam-status" class="setup-state">Loading…</span><span class="overview-chevron" aria-hidden="true">›</span></button>
+              </div><details class="performance-card"><summary>Server details</summary><div id="performance" class="performance-list"><div class="skeleton-line"></div><div class="skeleton-line"></div></div></details></article>
+            </aside>
           </div>
           <div class="overview-grid overview-modules">
           <article class="card modules-card">
@@ -396,5 +410,6 @@
   <script src="/dashboard/community-releases.js" defer></script>
   <script src="/dashboard/workspace.js?v=20261018-research" defer></script>
   <script src="/dashboard/control-center.js" defer></script>
+  <script src="/dashboard/overview.js" defer></script>
 </body>
 </html>

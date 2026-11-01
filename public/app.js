@@ -1,4 +1,5 @@
 let state;
+let dashboardFetchedAt = null;
 let pendingDashboardWrites = 0;
 let youtubeLatest;
 let youtubeLatestLoaded = false;
@@ -540,7 +541,6 @@ function render(current) {
   $('server-status-dot').className = current.bot.online ? 'online' : '';
   $('online-pill').textContent = current.bot.online ? 'Online' : 'Offline';
   $('online-pill').className = `pill ${current.bot.online ? 'online' : ''}`;
-  const uptimeHours = Math.floor(current.bot.uptimeSeconds / 3600);
   const enabledModules = current.categories.filter(category => category.enabled).length;
   const health = current.operations?.health;
   const metricRows = [
@@ -584,10 +584,8 @@ function render(current) {
   const statusRows = [
     ['Bot', current.bot.online ? 'Online' : 'Offline', current.bot.online ? 'good' : 'bad'],
     ['Discord API', current.bot.online ? 'Connected' : 'Disconnected', current.bot.online ? 'good' : 'bad'],
-    ['WebSocket', current.bot.online ? 'Connected' : 'Disconnected', current.bot.online ? 'good' : 'bad'],
     ...(current.database ? [['Database', databaseReady ? 'Connected' : 'Degraded', databaseReady ? 'good' : 'warning']] : []),
     ['Dashboard API', 'Connected', 'good'],
-    ['Uptime', `${uptimeHours}h ${Math.floor((current.bot.uptimeSeconds % 3600) / 60)}m`, current.bot.online ? 'good' : 'bad'],
   ];
   const systemStatus = $('system-status');
   systemStatus.querySelectorAll('.skeleton-line').forEach(node => node.remove());
@@ -833,6 +831,7 @@ async function load() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Could not load dashboard');
     if (data.workspace?.key !== dashboardWorkspace && data.workspace?.guildId !== dashboardWorkspace) throw new Error('The selected workspace could not be verified. Reload before making changes.');
+    dashboardFetchedAt = Date.now();
     render(data);
     $('dashboard-load-error')?.remove();
     document.body.dataset.dashboardReady = 'true';

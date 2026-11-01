@@ -5,7 +5,7 @@
   const styles = getComputedStyle(document.documentElement);
   const duration = (name, fallback) => parseFloat(styles.getPropertyValue(`--motion-${name}`)) || fallback;
   const timing = { interaction: duration('interaction', 150), panel: duration('panel', 240), count: duration('count', 450), stagger: duration('stagger', 50) };
-  const selector = '.bot-banner, .feature-heading, .summary-card, .metric, .card, .empty-state, #control-search-results > button';
+  const selector = '.bot-banner, .feature-heading, .summary-card, .metric, .card, .greeting-editor, .empty-state, #control-search-results > button';
   const entered = new WeakSet();
   const seen = new Set();
   const pending = new Map();
@@ -17,7 +17,6 @@
   let running = false;
   let refreshFrame = 0;
   let route = location.hash.slice(1) || 'overview';
-  const details = new Map();
   const paused = () => preference.matches || document.hidden || !running;
   const eligible = element => element.isConnected && !element.closest('.page:not(.active)') && !element.closest('[hidden]')
     && !(element.closest('[data-panel]') && document.body.dataset.dashboardReady!=='true')
@@ -134,15 +133,9 @@
     if(!element?.matches('details') || event.target.closest('a,button,input,select'))return;
     if(paused() || !eligible(element) || typeof element.animate!=='function')return;
     event.preventDefault();
-    const before=element.getBoundingClientRect().height;
-    const expanded=!(details.get(element)?.expanded ?? element.open);
-    animations.get(element)?.cancel();
-    element.open=true;
-    const after=expanded?element.getBoundingClientRect().height:summary.getBoundingClientRect().height;
-    const token={expanded};details.set(element,token);
-    token.animation=animate(element,[{height:`${before}px`,overflow:'clip'},{height:`${after}px`,overflow:'clip'}],{duration:260});
-    const finish=()=>{if(details.get(element)!==token)return;details.delete(element);element.open=expanded;};
-    if(token.animation)token.animation.finished.then(finish,()=>{});else finish();
+    element.open=!element.open;
+    const content=[...element.children].find(child=>child!==summary);
+    if(content){cancel(content);if(element.open)animate(content,[{opacity:0,translate:'0 -4px'},{opacity:1,translate:'0 0'}],{duration:180});}
   }
 
   function pointerMove(event) {
@@ -191,8 +184,7 @@
       document.querySelectorAll('.motion-enter').forEach(clearEntrance);
       panel?.querySelectorAll(selector).forEach(el=>entered.delete(el));
       for(const [el,animation] of animations)if(el.closest('.page')){animation.cancel();animations.delete(el);}
-      for(const [el,token] of details){token.animation?.cancel();el.open=token.expanded;details.delete(el);}
-      animate(document.getElementById('page-title'),[{clipPath:'inset(0 0 100% 0)',translate:'0 8px'},{clipPath:'inset(0 0 0 0)',translate:'0 0'}],{duration:300});
+      animate(document.getElementById('page-title'),[{opacity:.45,translate:'0 5px'},{opacity:1,translate:'0 0'}],{duration:200});
       animate(document.querySelector('.breadcrumb'),[{opacity:.4},{opacity:1}],{duration:180});
       animate(document.getElementById('page-description'),[{opacity:0,translate:'0 5px'},{opacity:1,translate:'0 0'}],{duration:260,delay:50});
     }
@@ -247,7 +239,6 @@
       for (const [element] of pending) if (!element.isConnected) { intersection?.unobserve(element); pending.delete(element); }
       for (const [element] of counters) if (!element.isConnected) cancelCount(element);
       for (const [element, animation] of animations) if (!element.isConnected) { animation.cancel(); animations.delete(element); }
-      for (const [element,token] of details) if(!element.isConnected){token.animation?.cancel();details.delete(element);}
     });
     mutations.observe(document.body, { childList: true, subtree: true });
     window.addEventListener('dexzu-page', onPage);
@@ -272,7 +263,6 @@
     for (const [dialog] of closing) cancelDialogClose(dialog);
     for (const animation of animations.values()) animation.cancel();
     animations.clear();
-    for(const [el,token] of details){el.open=token.expanded;}details.clear();
     window.removeEventListener('dexzu-page', onPage);
     window.removeEventListener('dexzu-data-ready',refresh);
     window.removeEventListener('dexzu-state',refresh);
