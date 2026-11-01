@@ -187,7 +187,7 @@ const icons = {
   chart: icon('<path d="M4 20V10M10 20V4M16 20v-7M22 20V7"/>'), ticket: icon('<path d="M2 9a3 3 0 0 0 0 6v3h20v-3a3 3 0 0 0 0-6V6H2Z"/><path d="M13 6v2M13 11v2M13 16v2"/>'),
 };
 const pageDetails = {
-  overview: ['Server overview', 'Your community, your controls. All in one place.'],
+  overview: ['Server overview', 'Your server at a glance.'],
   safety: ['Safety', 'Manage message filters and automatic moderation.'],
   greetings: ['Greetings', 'Welcome and goodbye member experiences.'],
   leveling: ['Leveling', 'XP rewards, announcements, and progression.'],
